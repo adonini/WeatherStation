@@ -1,0 +1,109 @@
+{
+     "OPCUA" :
+     {
+          "Host" : "localhost",
+          "Port" : "48041"
+     },
+    "Elements": [
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Absolute_Air_Pressure.Absolute_Air_Pressure_v",
+            "Value": "784.710022"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Absolute_Humidity.Absolute_Humidity_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Relative_Humidity.Relative_Humidity_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Air_Temperature.Air_Temperature_v",
+            "Value": "7.700000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Average_Wind_Speed.Average_Wind_Speed_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Mean_Wind_Speed.Mean_Wind_Speed_v",
+            "Value": "23.900000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Mean_Wind_Direction.Mean_Wind_Direction_v",
+            "Value": "23.900000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Max_Wind.Max_Wind_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Brightness.Brightness_v",
+            "Value": "105519.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Brightness_lux.Brightness_lux_v",
+            "Value": "105519.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Dew_Point_Temperature.Dew_Point_Temperature_v",
+            "Value": "429496736.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Global_Radiation.Global_Radiation_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Heat_Index_Temperature.Heat_Index_Temperature_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Wind_Chill_Temperature.Wind_Chill_Temperature_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Precipitation_Status.Precipitation_Status_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Precipitation_Amount.Precipitation_Amount_v",
+            "Value": "0.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Precipitation_Intensity.Precipitation_Intensity_v",
+            "Value": "1.000000"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Precipitation_Type.Precipitation_Type_v",
+            "Value": "1"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Time.Time_v",
+            "Value": "1"
+        },
+        {
+            "NS": "2",
+            "Name": "Unit_WS.WS.Monitoring.Date.Date_v",
+            "Value": "1"
+        }
+    ]
+}

@@ -1,0 +1,49 @@
+.body {
+    font-family: "Lato", sans-serif;
+    margin: 0;    
+    padding: 0;
+    background-color: #F7F7F7;
+}
+
+.header {
+    background-color: #3ebad6e3;
+    height: 220px;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    margin-bottom: 2rem;
+    margin-top: 1rem;
+}
+
+.header-title {
+    color: #feffff;
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+    margin: auto;
+    margin-bottom: auto;
+    margin-top: auto;
+}
+
+/* card plot header */
+.card {
+    margin-bottom: 20px;
+    /* box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.18); */
+    /* justify-content: center; */
+    align-items: center;
+    width: 100;
+}
+
+/* @media (max-width: 768px) {
+    .custom-row {
+      padding-top: 10px;
+    }
+  } */
+
+.logo{
+    height: 250px;
+    padding: 0px;
+    margin-bottom: auto;
+    margin-top: auto;
+    text-align: right;
+  }
