@@ -400,38 +400,6 @@ def combine_datetime(date_time_list):
             logger.error(f'Error in timestamp entry {date_str}, {time_str}: {e}')
             timestamps.append(None)
     return timestamps
-    # """
-    # Combines a list of dates and times into datetime objects.
-    # Args:
-    #     dates (list): a list of float date values
-    #     times (list): A list of float time values
-    # Returns:
-    #     list: A list of datetime objects.
-    # """
-    # if type(dates) == list and type(times) == list:
-    #     timestamps = []
-    #     for i in range(len(dates)):
-    #         try:
-    #             print("i: ", i)
-    #             date_str = dates[i]
-    #             time_str = times[i]
-    #             print('date: ', date_str)
-    #             print('time: ', time_str)
-    #             dt_str = date_str + ' ' + time_str
-    #             dt = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-    #             timestamps.append(dt)
-    #         except Exception as e:
-    #             print(f'Error in entry {i}: {dates[i]}, {time[i]}')
-    #             logger.error(f'Error in timestamp entry {i}: {dates[i]}, {time[i]}. Error: {e}')
-    #             continue
-    # else:
-    #     try:
-    #         dt_str = dates + ' ' + times
-    #         timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-    #     except Exception as e:
-    #         print(f'Error in in timestamp entry: {e}')
-    #         logger.error(f'Error in timestamp entry: {e}')
-    # return timestamps
 
 
 def get_magic_values():
@@ -456,7 +424,6 @@ def get_magic_values():
 
 def create_list_group_item(title, value, unit,  timestamp, badge_color='green', row_color='default'):
     if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
-        #print('HIIIIII')
         badge_color = 'secondary'
         row_color = 'secondary'
     return dbc.ListGroupItem(
@@ -514,16 +481,6 @@ def get_value_or_nan(dict, key):
 #     if n_clicks:
 #         return not is_open
 #     return is_open
-
-# @app.callback(
-#     dash.dependencies.Output("sidebar-toggle-button", "children"),
-#     [dash.dependencies.Input("sidebar-collapse", "is_open")],
-# )
-# def update_sidebar_toggle_button_text(is_open):
-#     if is_open:
-#         return "Collapse Sidebar"
-#     else:
-#         return "Expand Sidebar"
 
 
 # Function to update the time and date every 2sec
@@ -598,14 +555,6 @@ def update_sun(n_intervals):
 def update_live_values(n_intervals, n=100):
     # Get the latest reading from the database
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
-    #latest_json = data
-    # the data from Store is a json so transform back to dict
-    #latest_data = json.loads(latest_json)
-    #print(latest_data)
-    # Check if there are any NaN values in the wind speed or direction columns
-    #if wind_data['wind_speed'].isnull().any() or wind_data['wind_direction'].isnull().any():
-    #    raise dash.exceptions.PreventUpdate
-
     tng_dust_value, cloud_value, tran9_value = get_magic_values()
 
     # Get the WS timestamps
@@ -743,14 +692,10 @@ def update_temp_graph(n_intervals, time_range):
                 'Time.value': {'$ne': None},
                 'Date.value': {'$ne': None}},
                 projection, sort=[('added', pymongo.DESCENDING)]))
-    # Get the temperature values
+    # Get the temperature values and the dew-point values
     temps = [d['Air Temperature']['value'] for d in data]
-    #Get the dew-point values
     dews = [d['Dew Point Temperature']['value'] for d in data]
-    # Get the WS timestamps
-    #times = [d['Time']['value'] for d in data]
-    #dates = [d['Date']['value'] for d in data]
-    # create a list of tuple
+    # create a list of tuple and get WS timestamps
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
@@ -833,9 +778,6 @@ def update_hum_graph(n_intervals, time_range):
     # Get the humidity values
     hums = [d['Relative Humidity']['value'] for d in data]
     # Get the WS timestamps
-    #times = [d['Time']['value'] for d in data]
-    #dates = [d['Date']['value'] for d in data]
-    # create a list of tuple
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
@@ -922,13 +864,8 @@ def update_wind_graph(n_intervals, time_range):
     w_speed = [d['Average Wind Speed']['value'] for d in data]
     g_speed = [d['Max Wind']['value'] for d in data]
     # Get the timestamps of the WS
-    #mongo_timestamps = [d['added'] for d in data]
-    #times = [d['Time']['value'] for d in data]
-    #dates = [d['Date']['value'] for d in data]
-    # create a list of tuple
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
-    #print((timestamps))
 
     # Gust trace
     if latest_gdata is not None:
@@ -1108,9 +1045,6 @@ def update_wind_rose(n_intervals, time_range):
                                                            })
 
     # Get the WS timestamps
-    #times = [d['Time']['value'] for d in datapoints]
-    #dates = [d['Date']['value'] for d in datapoints]
-    # create a list of tuple
     # using zip() to iterate over both the Date.value and Time.value columns of the pd db simultaneously
     date_time_list = [(date, time) for date, time in zip(wind_data['Date.value'], wind_data['Time.value'])]
     timestamps = combine_datetime(date_time_list)
@@ -1224,9 +1158,6 @@ def update_radiation_graph(n_intervals, time_range):
     # Get the global radiation values
     rad = [d['Global Radiation']['value'] for d in data]
     # Get the WS timestamps
-    #times = [d['Time']['value'] for d in data]
-    #dates = [d['Date']['value'] for d in data]
-    # create a list of tuple
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
