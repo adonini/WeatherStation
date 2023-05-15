@@ -182,7 +182,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
 
 
 cards = [
-    make_plot_card("Wind Speed", "wind_hour_choice", "wind-graph", "wind-timestamp"),
+    make_plot_card("Wind 10' Avg", "wind_hour_choice", "wind-graph", "wind-timestamp"),
     make_plot_card("Humidity", "hum_hour_choice", "humidity-graph", "hum-timestamp"),
     make_plot_card("Temperature", "temp_hour_choice", "temp-graph", "temp-timestamp"),
     make_plot_card("Wind Rose", "windrose_hour_choice", "wind-rose", "windrose-timestamp"),
@@ -678,16 +678,16 @@ def update_live_values(n_intervals, n=100):
     if timestamps > (datetime.utcnow() - timedelta(minutes=5)):
         if w_speed != 'n/a':
             if w_speed >= 50:
-                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h')
+                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h')
             elif 40 <= w_speed < 50:
-                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check gusts speed and change the background color accordingly
         if g_speed != 'n/a':
             if g_speed >= 60:
-                live_values[2] = create_list_group_item_alert("Gust Speed ", g_speed, ' km/h')
+                live_values[2] = create_list_group_item_alert("Max Wind Speed ", g_speed, ' km/h')
             elif 50 <= g_speed < 60:
-                live_values[2] = create_list_group_item_alert("Gust Speed ", g_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[2] = create_list_group_item_alert("Max Wind Speed ", g_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check humidity and change the background color accordingly
         if hum != 'n/a':
