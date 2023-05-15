@@ -1,0 +1,56 @@
+build
+.DS_Store
+
+# object files
+*.o
+*.obj
+
+# library files
+*.so
+*.a
+*.dll
+*.dylib
+
+# vim files (see https://github.com/github/gitignore/blob/main/Global/Vim.gitignore)
+tag
+*.swp
+*~
+
+# Executables
+*.exe
+*.out
+*.app
+
+# CMake ignore (see https://github.com/github/gitignore/blob/main/CMake.gitignore)
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile*
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+### VisualStudioCode ###
+.vscode/*      
+#!.vscode/settings.json
+#!.vscode/tasks.json
+#!.vscode/launch.json
+#!.vscode/extensions.json
+
+### VisualStudioCode Patch ###
+# Ignore all local history of files
+**/.history
+
+# Python Tools for Visual Studio (PTVS)
+__pycache__/
+*.pyc
+
+# single files
+
+extra/*
+logs/*
+dashboard/logs_dash/*
