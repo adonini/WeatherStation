@@ -1197,4 +1197,4 @@ def update_radiation_graph(n_intervals, time_range):
 # Run the app
 if __name__ == '__main__':
     #app.run_server(debug=True) # development server
-    serve(app.server, host='0.0.0.0', port=8080, threads=100, _quiet=True)
+    serve(app.server, host='0.0.0.0', port=5010, threads=100, _quiet=True)
