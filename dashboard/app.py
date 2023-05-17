@@ -406,7 +406,7 @@ def combine_datetime(date_time_list):
 def get_magic_values():
     url = "http://www.magic.iac.es/site/weather/index.html"
     try:
-        response = requests.get(url)
+        response = requests.get(url, timeout=5)  # set a timeout of 5s to get a response
         soup = BeautifulSoup(response.content, "html.parser")
         # Find the table row that contains the values
         tng_dust_row = soup.find("a", {"href": "javascript:siteWindowdust()"}).parent.parent
@@ -415,12 +415,19 @@ def get_magic_values():
         cloud_value = cloud_row.find_all("td")[1].text.strip()
         tran9_row = soup.find("a", {"href": "javascript:siteWindowlidar()"}).parent.parent
         tran9_value = tran9_row.find_all("td")[1].text.strip()
+        return tng_dust_value, cloud_value, tran9_value
+    except requests.exceptions.Timeout:
+        logger.error('The request to the website timed out.')
+        tng_dust_value = 'n/a'
+        cloud_value = 'n/a'
+        tran9_value = 'n/a'
+        return tng_dust_value, cloud_value, tran9_value
     except Exception:
         logger.warning('Unable to access MAGIC values!')
         tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
-    return tng_dust_value, cloud_value, tran9_value
+        return tng_dust_value, cloud_value, tran9_value
 
 
 def create_list_group_item(title, value, unit,  timestamp, badge_color='green', row_color='default'):
