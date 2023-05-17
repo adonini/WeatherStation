@@ -43,8 +43,8 @@ async def main():
         else:
             #print("No data available. Skipping add it to Mongo!")
             logger.debug("No data available. Skipping add it to Mongo!")
-        # sleep 2s before next polling
-        time.sleep(3)
+        # sleep 5s before next pulling
+        time.sleep(5)
 
 
 if __name__ == "__main__":
