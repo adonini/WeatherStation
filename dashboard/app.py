@@ -32,7 +32,8 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 12:00 UTC
 utc_time = time(12, 0, 0)
-file_handler = TimedRotatingFileHandler('./logs_dash/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/dashboard/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+#file_handler = TimedRotatingFileHandler('./logs_dash/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 # Create formatter and add it to handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
@@ -1188,5 +1189,5 @@ def update_radiation_graph(n_intervals, time_range):
 
 # Run the app
 if __name__ == '__main__':
-    app.run_server(debug=True)
-    #serve(app.server, host='0.0.0.0', port=8080, threads=100, _quiet=True)
+    #app.run_server(debug=True) # development server
+    serve(app.server, host='0.0.0.0', port=8080, threads=100, _quiet=True)

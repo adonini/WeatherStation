@@ -13,7 +13,8 @@ logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 12:00 UTC
 utc_time = t(12, 0, 0)
-file_handler = TimedRotatingFileHandler('./logs/WS.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/WS.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+#file_handler = TimedRotatingFileHandler('./logs/WS.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
