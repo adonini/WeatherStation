@@ -1,0 +1,106 @@
+[{
+  "name": "Mean Wind Speed",
+  "units": "km/h",
+  "description": "Mean Wind Speed",
+  "register": 30003
+},{
+  "name": "Max Wind",
+  "units": "km/h",
+  "description": "Maximum Value Wind Velocity (gust)y",
+  "register": 30011
+},{
+  "name": "Average Wind Speed",
+  "units": "km/h",
+  "description": "Average Wind Speed",
+  "register": 30019
+},{
+  "name": "Mean Wind Direction",
+  "units": "deg",
+  "description": "Mean Wind Direction",
+  "register": 30203
+},{
+  "name": "Air Temperature",
+  "units": "Celsius",
+  "description": "Air Temperature",
+  "register": 30401
+},{
+  "name": "Wind Chill Temperature",
+  "units": "Celsius",
+  "description": "Wind Chill Temperature",
+  "register": 30409
+},{
+  "name": "Heat Index Temperature",
+  "units": "Celsius",
+  "description": "Heat Index Temperature",
+  "register": 30411
+},{
+  "name": "Relative Humidity",
+  "units": "percent",
+  "description": "Relative Humidity",
+  "register": 30601
+},{
+  "name": "Dew Point Temperature",
+  "units": "Celsius",
+  "description": "Dew Point Temperature",
+  "register": 30605
+},{
+  "name": "Absolute Air Pressure",
+  "units": "hPa",
+  "description": "Absolute Air Pressure",
+  "register": 30801
+},{
+  "name": "Global Radiation",
+  "units": "W/m^2",
+  "description": "Global Radiation",
+  "register": 31001
+},{
+  "name": "Brightness",
+  "units": "klux",
+  "description": "Brightness in kLux (max value of 4 sensors)",
+  "register": 31213
+},{
+  "name": "Brightness lux",
+  "units": "lux",
+  "description": "Brightness in Lux (max value of 4 sensors)",
+  "register": 31223
+},{
+  "name": "Precipitation Status",
+  "units": "dimensionless",
+  "description": "Precipitation status",
+  "register": 31401
+},{
+  "name": "Precipitation Intensity",
+  "units": "mm/h",
+  "description": "Precipitation Intensity",
+  "register": 31403
+},{
+  "name": "Precipitation Amount",
+  "units": "mm/d",
+  "description": "Amount of Precipitation in a day",
+  "register": 31405
+},{
+  "name": "Precipitation Type",
+  "units": "dimensionless",
+  "description": "Precipitation Type",
+  "register": 31407
+},{
+  "name": "Date",
+  "units": "dimensionless",
+  "description": "Day",
+  "register": 34601
+},{
+  "name": "Time",
+  "units": "dimensionless",
+  "description": "Time of the day in UTC",
+  "register": 34603
+},{
+  "name": "Wind Sensor Status",
+  "units": "dimensionless",
+  "description": "Status of the wind sensor",
+  "register": 34811
+},{
+  "name": "Absolute Humidity",
+  "units": "g/m^3",
+  "description": "Absolute Humidity",
+  "register": 30603
+}]
