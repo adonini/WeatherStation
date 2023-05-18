@@ -166,6 +166,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
             options=time_options,
             value=1,
             clearable=False,
+            searchable=False,
             style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
         ), width=3, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"})
     ], align="center")
