@@ -877,14 +877,14 @@ def update_wind_graph(n_intervals, time_range):
 
     # Gust trace
     if latest_gdata is not None:
-        g_name = 'Gusts speed'
+        g_name = 'Max wind speed'
         if latest_gdata >= 60:
-            g_name = '<span style="color:red">&#x26a0; Gusts speed</span>'
+            g_name = '<span style="color:red">&#x26a0; Max wind speed</span>'
         fig.add_trace(go.Scatter(x=timestamps, y=g_speed,
                                  name=g_name,
                                  hoveron='points',
                                  line_color='#86ce00',
-                                 hovertemplate=('%{x}<br>' + 'Gusts Speed: %{y:.2f} km/h <br><extra></extra> ')
+                                 hovertemplate=('%{x}<br>' + 'Max Wind Speed: %{y:.2f} km/h <br><extra></extra> ')
                                  )
                       )
         # Change gust graph color if above limit
