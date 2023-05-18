@@ -3,7 +3,7 @@ services:
   mongo:
     hostname: "mongo-WS"  # custom host name to use for the service container
     container_name: "mongodb-WS"  # specifies a custom container name
-    image: "mongo:4.2.1-bionic"  # image to start the container from. Latest version on 05/2023 is 6.0.5
+    image: "mongo:4.2.1-bionic"  # image to start the container from. Same as TCU one.
     restart: unless-stopped  # restarts a container irrespective of the exit code but will stop restarting when the service is stopped or removed
     ports:  # Exposes container ports: host IP, host port and container port
       - '27010:27010'

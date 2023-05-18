@@ -43,7 +43,7 @@ logger.addHandler(file_handler)
 #---------------------------------------------------------------------------#
 # Connect to MongoDB
 #---------------------------------------------------------------------------#
-client = MongoClient("mongodb://127.0.0.1:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+1.6.2")
+client = MongoClient("mongodb://127.0.0.1:27010")
 mydb = client["WS"]
 collection = mydb["Readings"]
 
@@ -143,7 +143,7 @@ sidebar = html.Div([
 # # Card components
 ######################
 # plots configuration
-config = {'scrollZoom': True,  # allows users to zoom in and out of figures using the scroll wheel
+config = {#'scrollZoom': True,  # allows users to zoom in and out of figures using the scroll wheel
           'displaylogo': False,  # remove plotly logo
           #'displayModeBar': False,
           'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
