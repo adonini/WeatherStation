@@ -181,7 +181,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
-            dbc.CardBody(body, style={"maxHeight": 450, "width": "100%"}),
+            dbc.CardBody(body, style={"maxHeight": 500, "width": "100%"}),
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
         className="m-2 shadow",
