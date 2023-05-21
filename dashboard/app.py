@@ -263,7 +263,7 @@ app.layout = html.Div([
         html.Div(sidebar, className="col-xl-2 col-lg-3 col-md-4 m-0 ps-0"),
         html.Div(content, className="col-xl-10 col-lg-9 col-md-8 col-6"),
         # dcc.Store inside the user's current browser session
-        dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
+        #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
         dcc.Interval(
             id='interval-day-change',
@@ -665,7 +665,8 @@ def update_live_values(n_intervals, n=100):
 
 
 # Define the callback function to update the temp graph
-@app.callback([Output('temp-graph', 'figure'),
+@app.callback([#Output('temp-graph-loading', 'children'),
+               Output('temp-graph', 'figure'),
                Output('temp-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
                Input('temp_hour_choice', 'value')])
@@ -682,19 +683,20 @@ def update_temp_graph(n_intervals, time_range):
     # Query the data from the database
     data = list(collection.find({
         'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        'Air Temperature.value': {'$ne': None},
-        'Dew Point Temperature.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},
+        # 'Air Temperature.value': {'$ne': None},
+        # 'Dew Point Temperature.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },
         projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not data:
         # Query the latest data from the database
-        last = collection.find_one({
-            'Air Temperature.value': {'$ne': None},
-            'Dew Point Temperature.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+        #     {'Air Temperature.value': {'$ne': None},
+        #     'Dew Point Temperature.value': {'$ne': None},
+        #     'Time.value': {'$ne': None},
+        #     'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -702,10 +704,11 @@ def update_temp_graph(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Air Temperature.value': {'$ne': None},
-                'Dew Point Temperature.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Air Temperature.value': {'$ne': None},
+                # 'Dew Point Temperature.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
     # Get the temperature values and the dew-point values
     temps = [d['Air Temperature']['value'] for d in data]
@@ -765,17 +768,19 @@ def update_hum_graph(n_intervals, time_range):
     # Query the data from the database
     data = list(collection.find({
         'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        'Relative Humidity.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},  # filter out None values
+        # 'Relative Humidity.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },  # filter out None values
         projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     #print(data)
     if not data:
         # Query the latest data from the database
-        last = collection.find_one({
-            'Relative Humidity.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+            # {
+            # 'Relative Humidity.value': {'$ne': None},
+            # 'Time.value': {'$ne': None},
+            # 'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -783,9 +788,10 @@ def update_hum_graph(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Relative Humidity.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Relative Humidity.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     # Get the most recent value
@@ -845,18 +851,20 @@ def update_wind_graph(n_intervals, time_range):
     # Query the data from the database
     data = list(collection.find({
         'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        'Average Wind Speed.value': {'$ne': None},
-        'Max Wind.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},
+        # 'Average Wind Speed.value': {'$ne': None},
+        # 'Max Wind.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },
         projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
-        last = collection.find_one({
-            'Average Wind Speed.value': {'$ne': None},
-            'Max Wind.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+            # {
+            # 'Average Wind Speed.value': {'$ne': None},
+            # 'Max Wind.value': {'$ne': None},
+            # 'Time.value': {'$ne': None},
+            # 'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -864,10 +872,11 @@ def update_wind_graph(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Average Wind Speed.value': {'$ne': None},
-                'Max Wind.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Average Wind Speed.value': {'$ne': None},
+                # 'Max Wind.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
     # Create the figure
     fig = go.Figure()
@@ -958,16 +967,18 @@ def update_brightness_graph(n_intervals, time_range):
     # Query the data from the database
     data = list(collection.find({
         'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        'Brightness lux.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},
+        # 'Brightness lux.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },
         projection, sort=[('added', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database
-        last = collection.find_one({
-            'Brightness lux.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+            # {
+            # 'Brightness lux.value': {'$ne': None},
+            # 'Time.value': {'$ne': None},
+            # 'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -975,9 +986,10 @@ def update_brightness_graph(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Brightness lux.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Brightness lux.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     # Get the brightness values
@@ -1029,19 +1041,21 @@ def update_wind_rose(n_intervals, time_range):
     }
     datapoints = list(collection.find({
         "added": {"$gte": datetime.utcnow() - timedelta(hours=time_range)},
-        'Average Wind Speed.value': {'$ne': None},
-        'Mean Wind Direction.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},
+        # 'Average Wind Speed.value': {'$ne': None},
+        # 'Mean Wind Direction.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },
         projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not datapoints:
         # Query the latest data from the database
-        last = collection.find_one({
-            'Average Wind Speed.value': {'$ne': None},
-            'Mean Wind Direction.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+            # {
+            # 'Average Wind Speed.value': {'$ne': None},
+            # 'Mean Wind Direction.value': {'$ne': None},
+            # 'Time.value': {'$ne': None},
+            # 'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -1049,10 +1063,11 @@ def update_wind_rose(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             datapoints = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Average Wind Speed.value': {'$ne': None},
-                'Mean Wind Direction.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Average Wind Speed.value': {'$ne': None},
+                # 'Mean Wind Direction.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     wind_data = json_normalize(datapoints).rename(columns={'Average Wind Speed.value': 'WindSpd',
@@ -1149,16 +1164,18 @@ def update_radiation_graph(n_intervals, time_range):
     # Query the data from the database
     data = list(collection.find({
         'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        'Global Radiation.value': {'$ne': None},
-        'Time.value': {'$ne': None},
-        'Date.value': {'$ne': None}},
+        # 'Global Radiation.value': {'$ne': None},
+        # 'Time.value': {'$ne': None},
+        # 'Date.value': {'$ne': None}
+        },
         projection, sort=[('added', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database and avoid having None values
-        last = collection.find_one({
-            'Global Radiation.value': {'$ne': None},
-            'Time.value': {'$ne': None},
-            'Date.value': {'$ne': None}},
+        last = collection.find_one(
+            # {
+            # 'Global Radiation.value': {'$ne': None},
+            # 'Time.value': {'$ne': None},
+            # 'Date.value': {'$ne': None}},
             projection,
             sort=[('added', pymongo.DESCENDING)]
         )
@@ -1166,9 +1183,10 @@ def update_radiation_graph(n_intervals, time_range):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
                 'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                'Global Radiation.value': {'$ne': None},
-                'Time.value': {'$ne': None},
-                'Date.value': {'$ne': None}},
+                # 'Global Radiation.value': {'$ne': None},
+                # 'Time.value': {'$ne': None},
+                # 'Date.value': {'$ne': None}
+                },
                 projection, sort=[('added', pymongo.DESCENDING)]))
     # Get the global radiation values
     rad = [d['Global Radiation']['value'] for d in data]
