@@ -143,11 +143,11 @@ sidebar = html.Div([
 # # Card components
 ######################
 # plots configuration
-config = {#'scrollZoom': True,  # allows users to zoom in and out of figures using the scroll wheel
-          'displaylogo': False,  # remove plotly logo
-          #'displayModeBar': False,
-          'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
-          }
+config = {
+    'displaylogo': False,  # remove plotly logo
+    'modeBarButtonsToRemove': ['resetScale'],
+    'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
+}
 
 time_options = [{'label': '1 Hour', 'value': 1},
                 {'label': '3 Hours', 'value': 3},
