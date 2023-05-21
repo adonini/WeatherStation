@@ -171,7 +171,13 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
         ), width=3, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"})
     ], align="center")
     # Body
-    body = dcc.Graph(id=graph_id, figure={}, style={"width": "100%", "height": "100%"}, config=config)  # width and height to 100% of the parent element
+    body = html.Div(dbc.Spinner(
+        size="md",
+        color="primary",
+        delay_show=1000,
+        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "100%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
+        #id=f"{graph_id}-loading",
+    )
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
