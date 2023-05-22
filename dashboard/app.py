@@ -230,7 +230,7 @@ CONTENT_STYLE = {
 
 content = html.Div(children=[
     html.Div(dbc.Col(make_card_grid())),
-    dcc.Interval(id='interval-component', interval=20000, n_intervals=0),  # 20s update
+    dcc.Interval(id='interval-component', interval=60000, n_intervals=0),  # 1min update
 ], className="p-2", style=CONTENT_STYLE)
 
 ######################
