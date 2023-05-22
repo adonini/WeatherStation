@@ -129,10 +129,9 @@ SIDEBAR_STYLE = {
 sidebar = html.Div([
     dbc.Nav(
         [html.Div(card_summary),
+         dcc.Interval(id='interval-livevalues', interval=20000, n_intervals=0),
          html.Hr(),
          html.Div(card_info)],
-         #html.Hr(),
-         #html.Div(card_link, className="d-md-block")],  # visible on screens that are larger than or equal to the "md" breakpoint
         vertical=True,
     )],
     className="sticky-top overflow-scroll vh-100",
@@ -498,11 +497,11 @@ def get_value_or_nan(dict, key):
 #     return is_open
 
 
-# Function to update the time and date every 2sec
+# Function to update the time and date every 20sec
 @app.callback(
     dash.dependencies.Output('current-time', 'children'),
     dash.dependencies.Output('current-date', 'children'),
-    dash.dependencies.Input('interval-component', 'n_intervals'))
+    dash.dependencies.Input('interval-livevalues', 'n_intervals'))
 def update_date_time(n_intervals):
     return f"{datetime.utcnow().time().strftime('%H:%M:%S %Z')} UTC", f"{datetime.utcnow().date().strftime('%d-%m-%Y %Z')}"
 
@@ -560,10 +559,10 @@ def update_sun(n_intervals):
         return 'n/a', 'n/a'
 
 
-# Define a function to update the live values every x seconds (depends from the interval)
+# Define a function to update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children')],
-              [Input('interval-component', 'n_intervals'),
+              [Input('interval-livevalues', 'n_intervals'),
                #dash.dependencies.Input('store-last-db-entry', 'data')
                ]
               )
