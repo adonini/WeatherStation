@@ -606,6 +606,7 @@ def update_live_values(n_intervals, n=100):
     hum = get_value_or_nan(latest_data, 'Relative Humidity')
     press = get_value_or_nan(latest_data, 'Absolute Air Pressure')
     w_speed = get_value_or_nan(latest_data, 'Average Wind Speed')
+    w10_speed = get_value_or_nan(latest_data, 'Mean 10 Wind Speed')
     g_speed = get_value_or_nan(latest_data, 'Max Wind')
     bright = get_value_or_nan(latest_data, 'Brightness')
     bright_lux = get_value_or_nan(latest_data, 'Brightness lux')
@@ -623,6 +624,7 @@ def update_live_values(n_intervals, n=100):
     live_values = [
         create_list_group_item("Humidity ", hum, ' %', timestamps),
         create_list_group_item("Wind Speed", w_speed, ' km/h', timestamps),
+        create_list_group_item("Wind 10' Avg", w10_speed, ' km/h', timestamps),
         create_list_group_item("Max Wind Speed ", g_speed, ' km/h', timestamps),
         create_list_group_item("Wind Direction ", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
         create_list_group_item("Temperature ", temp, ' °C', timestamps),
@@ -641,8 +643,14 @@ def update_live_values(n_intervals, n=100):
     if timestamps > (datetime.utcnow() - timedelta(minutes=5)):
         if w_speed != 'n/a':
             if w_speed >= 50:
-                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h')
+                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h')
             elif 40 <= w_speed < 50:
+                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h', badge_color='warning', row_color='warning')
+
+        if w10_speed != 'n/a':
+            if w10_speed >= 50:
+                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h')
+            elif 40 <= w10_speed < 50:
                 live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check gusts speed and change the background color accordingly
@@ -835,6 +843,7 @@ def update_wind_graph(n_intervals, time_range):
         'added': 1,
         'Average Wind Speed.value': 1,  # use Average
         'Max Wind.value': 1,
+        'Mean 10 Wind Speed.value': 1,
         'Time.value': 1,
         'Date.value': 1,
         '_id': 0
@@ -869,10 +878,12 @@ def update_wind_graph(n_intervals, time_range):
 
     # Get the most recent value
     latest_wdata = data[0]['Average Wind Speed']['value']
+    latest_w10data = data[0]['Mean 10 Wind Speed']['value']
     latest_gdata = data[0]['Max Wind']['value']
     # Get the wind and gusts values
-    w_speed = [d['Average Wind Speed']['value'] for d in data]
-    g_speed = [d['Max Wind']['value'] for d in data]
+    w_speed = [d.get('Average Wind Speed', {}).get('value') for d in data]
+    w10_speed = [d.get('Mean 10 Wind Speed', {}).get('value') for d in data]  # [d['Mean 10 Wind Speed']['value'] for d in data]
+    g_speed = [d.get('Max Wind', {}).get('value') for d in data]
     # Get the timestamps of the WS
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
@@ -894,8 +905,23 @@ def update_wind_graph(n_intervals, time_range):
             fig.update_traces(fill='tozeroy', fillcolor='rgba(254,0,206,0.1)', line_color='#fe00ce', opacity=0.1, selector=({'name': g_name}))
             # fill='tonexty' = fill to trace0 y
             # fill='tozeroy' = fill down to xaxis
+    # Wind 10' trace
+    if latest_w10data is not None:
+        w10_name = "Wind 10' Avg"
+        if latest_w10data >= 50:
+            w_name = "<span style='color:red'>&#x26a0; Wind 10' Avg</span>"
+        fig.add_trace(go.Scatter(x=timestamps, y=w10_speed,
+                                 name=w10_name,
+                                 hoveron='points',
+                                 line_color="rgb(219,112,147)",
+                                 hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> ")
+                                 )
+                      )
+        # Change wind graph color if above limit
+        if latest_w10data >= 50:
+            fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
 
-    # Wind trace
+    # Wind 1' trace
     if latest_wdata is not None:
         w_name = 'Wind speed'
         if latest_wdata >= 50:
