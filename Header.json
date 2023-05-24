@@ -103,4 +103,8 @@
   "units": "g/m^3",
   "description": "Absolute Humidity",
   "register": 30603
+},{
+  "name": "Average Wind 10 Speed",
+  "units": "km/h",
+  "description": "Average Wind Speed over 10'"
 }]
