@@ -189,7 +189,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
 
 
 cards = [
-    make_plot_card("Wind 10' Avg", "wind_hour_choice", "wind-graph", "wind-timestamp"),
+    make_plot_card("Wind Speed", "wind_hour_choice", "wind-graph", "wind-timestamp"),
     make_plot_card("Humidity", "hum_hour_choice", "humidity-graph", "hum-timestamp"),
     make_plot_card("Temperature", "temp_hour_choice", "temp-graph", "temp-timestamp"),
     make_plot_card("Wind Rose", "windrose_hour_choice", "wind-rose", "windrose-timestamp"),
@@ -461,9 +461,9 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                     html.I(className="bi bi-exclamation-triangle-fill me-2"),
                     html.Div(title),
                 ], direction="horizontal", gap=1)),
-            dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), align="end", width="auto"),
+            dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
         ]),
-    ], color=row_color, className="rounded border-bottom")
+    ], color=row_color, className="rounded border-bottom position-relative")
 
 
 def get_value_or_nan(dict, key):
@@ -622,7 +622,7 @@ def update_live_values(n_intervals, n=100):
     # Format the live values as a list
     live_values = [
         create_list_group_item("Humidity ", hum, ' %', timestamps),
-        create_list_group_item("Wind 10′ Avg ", w_speed, ' km/h', timestamps),
+        create_list_group_item("Wind Speed", w_speed, ' km/h', timestamps),
         create_list_group_item("Max Wind Speed ", g_speed, ' km/h', timestamps),
         create_list_group_item("Wind Direction ", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
         create_list_group_item("Temperature ", temp, ' °C', timestamps),
