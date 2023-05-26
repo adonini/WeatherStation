@@ -492,28 +492,32 @@ def get_value_or_nan(dict, key):
 ######################
 # Callback functions
 ######################
-# Function to store the last entry in the db. Updates at refresh or every x sec
-# @app.callback(
-#     dash.dependencies.Output('store-last-db-entry', 'data'),
-#     dash.dependencies.Input('interval-component', 'n_intervals'))
-# def last_db_entry(n_intervals):
-#     # Get the latest reading from the database
-#     #print(type(collection.find_one(sort=[('added', pymongo.DESCENDING)])))
-#     # make the object JSON serializable
-#     last_entry = collection.find_one(sort=[('added', pymongo.DESCENDING)])
-#     #last_entry['added'] = last_entry['added'].strftime('%Y-%m-%d %H:%M:%S')
-#     result_json = json.dumps(last_entry, default=str)
-#     #print(type(result_json))
-#     return result_json
-# @app.callback(
-#     dash.dependencies.Output("sidebar-collapse", "is_open"),
-#     [dash.dependencies.Input("sidebar-toggle-button", "n_clicks")],
-#     [dash.dependencies.State("sidebar-collapse", "is_open")],
-# )
-# def toggle_sidebar(n_clicks, is_open):
-#     if n_clicks:
-#         return not is_open
-#     return is_open
+
+# callback to enable or disable the intervals based on their respective states in case a modal is open
+@app.callback(
+    [Output('interval-component', 'disabled'),
+     Output('interval-livevalues', 'disabled')],
+    [Input("modal_Humidity", "is_open"),
+     Input("modal_Wind Speed", "is_open"),
+     Input("modal_Wind 10' Avg", "is_open"),
+     Input("modal_Wind Gusts", "is_open"),
+     Input("modal_Wind Direction", "is_open"),
+     Input("modal_Temperature", "is_open"),
+     Input("modal_Brightness", "is_open"),
+     Input("modal_Global Radiation", "is_open"),
+     Input("modal_Precipitation", "is_open"),
+     Input("modal_Pressure", "is_open")],
+    [State('interval-component', 'disabled'),
+     State('interval-livevalues', 'disabled')],
+)
+def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, interval1_disabled, interval2_disabled):
+    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure]):
+        interval1_disabled = True
+        interval2_disabled = True
+    else:
+        interval1_disabled = False
+        interval2_disabled = False
+    return interval1_disabled, interval2_disabled
 
 
 # Callback to update the time and date every 20sec
