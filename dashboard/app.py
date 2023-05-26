@@ -259,8 +259,8 @@ app.layout = html.Div([
     ], style={"max-height": "95px", "margin-top": "20px", 'zindex': '999'}, className='d-flex justify-content-between align-items-center break-text me-2 ms-1'),
     html.Hr(className="mt-sm-4"),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-2 col-lg-3 col-md-4 m-0 ps-0"),
-        html.Div(content, className="col-xl-10 col-lg-9 col-md-8 col-6"),
+        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-5 col-sm-12 m-0 ps-0"),
+        html.Div(content, className="col-xl-10 col-lg-8 col-md-7 col-sm-12"),
         # dcc.Store inside the user's current browser session
         #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
