@@ -444,18 +444,140 @@ def get_magic_values():
         return tng_dust_value, cloud_value, tran9_value
 
 
+# define the body of each modal
+body_mapping = {
+    "Humidity": html.Div([
+        "A built-in hygro-thermo sensor with an I2C interface is used to measure temperature and humidity levels.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: 0 ... 100% relative humidity",
+        html.Br(),
+        "Accuracy: ±1.8% of 10 ... 90%,",
+        html.Br(),
+        html.Span("±3.0% of 0 ... 100%", style={"display": "inline-block", "margin-left": "73px"}),
+        html.Br(),
+        "Resolution: 0.1%"
+    ]),
+    "Wind Speed": html.Div([
+        "The wind speed measuring module consists of 4 ultrasonic converters, arranged in pairs of two facing each other via a reflector.",
+        html.Br(),
+        "The wind measuring values are gliding-averaged over a time span of 1 minute on a base of 100 millisecond values.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: 0.01 ... 60m/s",
+        html.Br(),
+        "Accuracy:",
+        html.Br(),
+        html.Span("- ≤5m/s: ±0.3m/s", style={"display": "inline-block", "margin-left": "10px"}),
+        html.Br(),
+        html.Span("- 5 ... 60m/s: ±3% of measured value", style={"display": "inline-block", "margin-left": "10px"}),
+    ]),
+    "Wind 10' Avg": "Value of the wind data of the previous 10 minutes.",
+    "Wind Direction": html.Div([
+        "Measuring range: 0 ... 360°",
+        html.Br(),
+        "Accuracy: ±2.0° with wind speed >2m/s"
+    ]),
+    "Wind Gusts": "Maximum value of the wind velocity (gust) of the previous 1 minute. The gust value is calculated over 3 seconds.",
+    "Global Radiation": html.Div([
+        "The global radial indicator is calculated with the brightness measurement of the 4 brightness sensors and the elevation angle of the sun position.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: 0 ... 2000 W/m²",
+        html.Br(),
+        "Accuracy: typ. ± 30 W/m² compared to a Class B pyranometer",
+        html.Br(),
+        "Resolution: 1 W/m²"
+    ]),
+    "Precipitation": html.Div([
+        "A Doppler radar module is used to detect precipitation and determine its intensity, quantity, and type. The radar module is mounted on top of the printed board in the device.",
+        html.Br(),
+        "The precipitation intensity is always the moving average of the last minute.",
+        html.Br(),
+        html.Br(),
+        "Measuring ranges:",
+        html.Br(),
+        html.Span("- Intensities: 0.001 ... 999mm/h", style={"display": "inline-block", "margin-left": "10px"}),
+        html.Br(),
+        html.Span("- Resolution intensity: 0.001mm/h", style={"display": "inline-block", "margin-left": "10px"}),
+        html.Br(),
+        html.Span("- Daily total: 0.01 ... 999mm", style={"display": "inline-block", "margin-left": "10px"}),
+        html.Br(),
+        html.Span("- Resolution daily total: 0.01mm", style={"display": "inline-block", "margin-left": "10px"})
+    ]),
+    "Temperature": html.Div([
+        "A built-in hygro-thermo sensor with an I2C interface is used to measure temperature and humidity levels.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: -50 ... +80°C",
+        html.Br(),
+        "Accuracy: ±0.3°C @ 25°C",
+        html.Br(),
+        html.Span("±0.5°C -45 ... +60°C", style={"display": "inline-block", "margin-left": "75px"}),
+        html.Br(),
+        html.Span("±1.0°C -50 ... +80°C", style={"display": "inline-block", "margin-left": "75px"}),
+        html.Br(),
+        "Resolution: 0.1°C"
+    ]),
+    "Pressure": html.Div([
+        "Air pressure is measured with a MEMs sensor.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: 260 … 1260hPa",
+        html.Br(),
+        "Accuracy: typ. ± 0.25hPa @ -20 … +80°C @ 800…1100hPa",
+        html.Br(),
+        html.Span("typ. ± 0.50hPa @ -20 … +80°C @ 600…1100hPa", style={"display": "inline-block", "margin-left": "73px"}),
+        html.Br(),
+        html.Span("typ. ± 1.00hPa @ -50 … -20°C @ 600…800hPa", style={"display": "inline-block", "margin-left": "73px"}),
+        html.Br(),
+        "Resolution: 0.1hPa"
+    ]),
+    "Brightness": html.Div([
+        "Brightness is measured using 4 individual photo sensors facing the 4 points of the compass at an elevation angle of 50°.",
+        html.Br(),
+        "The brightness is always averaged over 4 seconds.",
+        html.Br(),
+        html.Br(),
+        "Measuring range: 1lux ... 150klux.",
+        html.Br(),
+        "Accuracy: 3% of relative measured value.",
+        html.Br(),
+        "Resolution: ~0.3% of measuring value."
+    ])
+}
+
+
 def create_list_group_item(title, value, unit,  timestamp, badge_color='green', row_color='default'):
     if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
-    return dbc.ListGroupItem(
-        dbc.Row([
-            dbc.Col(title, className="justify-content-between"),
-            dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
-        ]),
-        color=row_color,
-        className="rounded border-bottom position-relative"
-    )
+    if title in ["Humidity", "Wind Speed", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Precipitation", "Pressure"]:
+        body = body_mapping.get(title, "Default body content.")
+        line = dbc.ListGroupItem(
+            dbc.Row([
+                dbc.Col(html.A(title, id=f"open_{title}", href="#", n_clicks=0, className="justify-content-between", style={"color": "var(--primary)", "textDecoration": "none"})),
+                dbc.Modal([
+                    dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
+                    dbc.ModalBody(body),
+                    #dbc.ModalFooter(dbc.Button("Close", id=f"close_{title}", className="ms-auto", n_clicks=0)),
+                ], id=f"modal_{title}", scrollable=True, is_open=False,
+                ),
+                dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
+            ]),
+            color=row_color,
+            className="rounded border-bottom position-relative"
+        )
+    else:
+        line = dbc.ListGroupItem(
+            dbc.Row([
+                dbc.Col(title, className="justify-content-between"),
+                dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
+            ]),
+            color=row_color,
+            className="rounded border-bottom position-relative"
+        )
+    return line
 
 
 def create_list_group_item_alert(title, value, unit, badge_color='danger', row_color='danger'):
@@ -473,25 +595,134 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
     if value == 'n/a':
         badge_color = 'secondary'
         row_color = 'secondary'
-    return dbc.ListGroupItem([
-        dbc.Row([
-            dbc.Col(
-                dbc.Stack([
-                    html.I(className="bi bi-exclamation-triangle-fill me-2"),
-                    html.Div(title),
-                ], direction="horizontal", gap=1)),
-            dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
-        ]),
-    ], color=row_color, className="rounded border-bottom position-relative")
+    # Create a list of titles that require a modal and check if the value exists in the list
+    if title in ["Humidity", "Wind Speed", "Wind 10' Avg", "Wind Gusts"]:
+        body = body_mapping.get(title, "Default body content.")
+        line = dbc.ListGroupItem([
+            dbc.Row([
+                dbc.Col([
+                    html.I(className="bi bi-exclamation-triangle-fill me-2", style={"display": "inline-block"}),
+                    html.Div(title, id=f"open_{title}", n_clicks=0, style={"display": "inline-block", "cursor": "pointer"}),
+                ], className="d-flex align-items-center"),
+                dbc.Modal([
+                    dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
+                    dbc.ModalBody(body),
+                    #dbc.ModalFooter(dbc.Button("Close", id=f"close_{title}", className="ms-auto", n_clicks=0)),
+                ], id=f"modal_{title}", scrollable=True, is_open=False,
+                ),
+                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
+            ]),
+        ], color=row_color, className="rounded border-bottom position-relative")
+    else:
+        line = dbc.ListGroupItem([
+            dbc.Row([
+                dbc.Col(
+                    dbc.Stack([
+                        html.I(className="bi bi-exclamation-triangle-fill me-2"),
+                        html.Div(title),
+                    ], direction="horizontal", gap=1)),
+                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
+            ]),
+        ], color=row_color, className="rounded border-bottom position-relative")
+    return line
+
+
+# function to open and close the modals
+def toggle_modal(n1, is_open):
+    """Toggle the state of a modal.
+    Args:
+        n1 (bool): A boolean value representing whether to toggle the state of the modal.
+        is_open (bool): A boolean value representing the current state of the modal.
+    Returns:
+        bool: If n1 is True or has a value of True, the function returns the opposite of is_open.
+            Otherwise, it returns the value of is_open.
+    This line checks if n1 is True or has a value of True. If n1 is True or has a value of True,
+    it returns the opposite of is_open. If n1 is False and does not have a True value, it returns
+    the value of is_open."""
+    if n1:  # or n2:
+        return not is_open
+    return is_open
 
 
 def get_value_or_nan(dict, key):
     """"Limit to two decimals the output with round"""
     return round(dict[key]['value'], 2) if dict[key]['value'] is not None else 'n/a'
 
+
 ######################
 # Callback functions
 ######################
+# Modals updates
+app.callback(
+    Output("modal_Humidity", "is_open"),
+    Input("open_Humidity", "n_clicks"),
+    #Input("close_Humidity", "n_clicks"),
+    State("modal_Humidity", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Speed", "is_open"),
+    Input("open_Wind Speed", "n_clicks"),
+    #Input("close_Wind Speed", "n_clicks"),
+    State("modal_Wind Speed", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind 10' Avg", "is_open"),
+    Input("open_Wind 10' Avg", "n_clicks"),
+    #Input("close_Wind 10' Avg", "n_clicks"),
+    State("modal_Wind 10' Avg", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Gusts", "is_open"),
+    Input("open_Wind Gusts", "n_clicks"),
+    #Input("close_Max Wind Speed", "n_clicks"),
+    State("modal_Wind Gusts", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Direction", "is_open"),
+    Input("open_Wind Direction", "n_clicks"),
+    #Input("close_Wind Direction", "n_clicks"),
+    State("modal_Wind Direction", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Temperature", "is_open"),
+    Input("open_Temperature", "n_clicks"),
+    #Input("close_Air Temperature", "n_clicks"),
+    State("modal_Temperature", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Brightness", "is_open"),
+    Input("open_Brightness", "n_clicks"),
+    #Input("close_Brightness", "n_clicks"),
+    State("modal_Brightness", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Global Radiation", "is_open"),
+    Input("open_Global Radiation", "n_clicks"),
+    #Input("close_Global Radiation", "n_clicks"),
+    State("modal_Global Radiation", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Precipitation", "is_open"),
+    Input("open_Precipitation", "n_clicks"),
+    #Input("close_Precipitation", "n_clicks"),
+    State("modal_Precipitation", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Pressure", "is_open"),
+    Input("open_Pressure", "n_clicks"),
+    #Input("close_Precipitation", "n_clicks"),
+    State("modal_Pressure", "is_open"),
+)(toggle_modal)
+
 
 # callback to enable or disable the intervals based on their respective states in case a modal is open
 @app.callback(
