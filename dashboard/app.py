@@ -641,19 +641,19 @@ def update_live_values(n_intervals, n=100):
 
     # Format the live values as a list
     live_values = [
-        create_list_group_item("Humidity ", hum, ' %', timestamps),
+        create_list_group_item("Humidity", hum, ' %', timestamps),
         create_list_group_item("Wind Speed", w_speed, ' km/h', timestamps),
         create_list_group_item("Wind 10' Avg", w10_speed, ' km/h', timestamps),
-        create_list_group_item("Max Wind Speed ", g_speed, ' km/h', timestamps),
-        create_list_group_item("Wind Direction ", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
-        create_list_group_item("Temperature ", temp, ' °C', timestamps),
+        create_list_group_item("Wind Gusts", g_speed, ' km/h', timestamps),
+        create_list_group_item("Wind Direction", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
+        create_list_group_item("Temperature", temp, ' °C', timestamps),
         create_list_group_item("Dew Point Temperature", dew, ' °C', timestamps),
         create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
         create_list_group_item("TNG Dust", tng_dust_value, ' µg/m3', timestamps),
-        create_list_group_item("Precipitation ", p_type, '', timestamps),
-        create_list_group_item("Precipitation Intensity ", p_int, ' mm/h', timestamps),
+        create_list_group_item("Precipitation", p_type, '', timestamps),
+        create_list_group_item("Precipitation Intensity", p_int, ' mm/h', timestamps),
         create_list_group_item("Global Radiation", rad, ' W/m2', timestamps),
-        create_list_group_item("Pressure ", press, ' hPa', timestamps),
+        create_list_group_item("Pressure", press, ' hPa', timestamps),
         create_list_group_item("MAGIC Cloudiness", cloud_value, '', timestamps),
         create_list_group_item("MAGIC Trans@9km", tran9_value, '', timestamps),
     ]
@@ -662,30 +662,30 @@ def update_live_values(n_intervals, n=100):
     if timestamps > (datetime.utcnow() - timedelta(minutes=5)):
         if w_speed != 'n/a':
             if w_speed >= 50:
-                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h')
+                live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h')
             elif 40 <= w_speed < 50:
-                live_values[1] = create_list_group_item_alert("Wind Speed ", w_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h', badge_color='warning', row_color='warning')
 
         if w10_speed != 'n/a':
             if w10_speed >= 50:
-                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h')
+                live_values[1] = create_list_group_item_alert("Wind 10′ Avg", w_speed, ' km/h')
             elif 40 <= w10_speed < 50:
-                live_values[1] = create_list_group_item_alert("Wind 10′ Avg ", w_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[1] = create_list_group_item_alert("Wind 10′ Avg", w_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check gusts speed and change the background color accordingly
         if g_speed != 'n/a':
             if g_speed >= 60:
-                live_values[2] = create_list_group_item_alert("Max Wind Speed ", g_speed, ' km/h')
+                live_values[2] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h')
             elif 50 <= g_speed < 60:
-                live_values[2] = create_list_group_item_alert("Max Wind Speed ", g_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[2] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check humidity and change the background color accordingly
         if hum != 'n/a':
             if hum >= 90:
-                live_values[0] = create_list_group_item_alert("Humidity ", hum, ' %')
+                live_values[0] = create_list_group_item_alert("Humidity", hum, ' %')
             elif 80 <= hum < 90:
                 print(hum)
-                live_values[0] = create_list_group_item_alert("Humidity ", hum, ' %', badge_color='warning', row_color='warning')
+                live_values[0] = create_list_group_item_alert("Humidity", hum, ' %', badge_color='warning', row_color='warning')
 
     return live_values, dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap")
 
@@ -908,53 +908,54 @@ def update_wind_graph(n_intervals, time_range):
     timestamps = combine_datetime(date_time)
 
     # Gust trace
-    if latest_gdata is not None:
-        g_name = 'Max wind speed'
-        if latest_gdata >= 60:
-            g_name = '<span style="color:red">&#x26a0; Max wind speed</span>'
-        fig.add_trace(go.Scatter(x=timestamps, y=g_speed,
-                                 name=g_name,
-                                 hoveron='points',
-                                 line_color='#86ce00',
-                                 hovertemplate=('%{x}<br>' + 'Max Wind Speed: %{y:.2f} km/h <br><extra></extra> ')
-                                 )
-                      )
-        # Change gust graph color if above limit
-        if latest_gdata >= 60:
-            fig.update_traces(fill='tozeroy', fillcolor='rgba(254,0,206,0.1)', line_color='#fe00ce', opacity=0.1, selector=({'name': g_name}))
-            # fill='tonexty' = fill to trace0 y
-            # fill='tozeroy' = fill down to xaxis
+    #if latest_gdata is not None:
+    g_name = 'Wind Gusts'
+    if latest_gdata >= 60:
+        g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
+    fig.add_trace(go.Scatter(x=timestamps, y=g_speed,
+                             name=g_name,
+                             hoveron='points',
+                             line_color='#86ce00',
+                             hovertemplate=('%{x}<br>' + 'Wind Gusts: %{y:.2f} km/h <br><extra></extra> ')
+                             )
+                  )
+    # Change gust graph color if above limit
+    if latest_gdata >= 60:
+        fig.update_traces(fill='tozeroy', fillcolor='rgba(254,0,206,0.1)', line_color='#fe00ce', opacity=0.1, selector=({'name': g_name}))
+        # fill='tonexty' = fill to trace0 y
+        # fill='tozeroy' = fill down to xaxis
+
     # Wind 10' trace
-    if latest_w10data is not None:
-        w10_name = "Wind 10' Avg"
-        if latest_w10data >= 50:
-            w_name = "<span style='color:red'>&#x26a0; Wind 10' Avg</span>"
-        fig.add_trace(go.Scatter(x=timestamps, y=w10_speed,
-                                 name=w10_name,
-                                 hoveron='points',
-                                 line_color="rgb(219,112,147)",
-                                 hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> ")
-                                 )
-                      )
-        # Change wind graph color if above limit
-        if latest_w10data >= 50:
-            fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
+    #if latest_w10data is not None:
+    w10_name = "Wind 10' Avg"
+    if latest_w10data >= 50:
+        w_name = "<span style='color:red'>&#x26a0; Wind 10' Avg</span>"
+    fig.add_trace(go.Scatter(x=timestamps, y=w10_speed,
+                             name=w10_name,
+                             hoveron='points',
+                             line_color="rgb(219,112,147)",
+                             hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> ")
+                             )
+                  )
+    # Change wind graph color if above limit
+    if latest_w10data >= 50:
+        fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
 
     # Wind 1' trace
-    if latest_wdata is not None:
-        w_name = 'Wind speed'
-        if latest_wdata >= 50:
-            w_name = '<span style="color:red">&#x26a0; Wind speed</span>'
-        fig.add_trace(go.Scatter(x=timestamps, y=w_speed,
-                                 name=w_name,
-                                 hoveron='points',
-                                 line_color="#316395",
-                                 hovertemplate=('%{x}<br>' + 'Wind Speed: %{y:.2f} km/h <br><extra></extra> ')
-                                 )
-                      )
-        # Change wind graph color if above limit
-        if latest_wdata >= 50:
-            fig.update_traces(fill='tozeroy', fillcolor='rgba(255,127,14,0.1)', line_color='#ff7f0e', opacity=0.1, selector=({'name': w_name}))
+    #if latest_wdata is not None:
+    w_name = 'Wind speed'
+    if latest_wdata >= 50:
+        w_name = '<span style="color:red">&#x26a0; Wind speed</span>'
+    fig.add_trace(go.Scatter(x=timestamps, y=w_speed,
+                             name=w_name,
+                             hoveron='points',
+                             line_color="#316395",
+                             hovertemplate=('%{x}<br>' + 'Wind Speed: %{y:.2f} km/h <br><extra></extra> ')
+                             )
+                  )
+    # Change wind graph color if above limit
+    if latest_wdata >= 50:
+        fig.update_traces(fill='tozeroy', fillcolor='rgba(255,127,14,0.1)', line_color='#ff7f0e', opacity=0.1, selector=({'name': w_name}))
 
     # Trend trace
     # https://stackoverflow.com/questions/74485762/scikit-learn-linear-regression-using-datetime-values-and-forecasting
