@@ -410,6 +410,14 @@ def combine_datetime(date_time_list):
 
 
 def get_magic_values():
+    """Retrieve TNG dust value, cloud value, and TRAN9 value from the MAGIC astronomical observatory website.
+    Returns:
+        tuple: A tuple containing three strings:
+            - tng_dust_value: The TNG dust value.
+            - cloud_value: The cloud value.
+            - tran9_value: The TRAN9 value.
+    If there is a problem accessing the website or if the request times out, the function returns 'n/a' for all values.
+    """
     url = "http://www.magic.iac.es/site/weather/index.html"
     try:
         response = requests.get(url, timeout=5)  # set a timeout of 5s to get a response
@@ -423,7 +431,7 @@ def get_magic_values():
         tran9_value = tran9_row.find_all("td")[1].text.strip()
         return tng_dust_value, cloud_value, tran9_value
     except requests.exceptions.Timeout:
-        logger.error('The request to the website timed out.')
+        logger.error('The request to the MAGIC website timed out.')
         tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
@@ -451,6 +459,17 @@ def create_list_group_item(title, value, unit,  timestamp, badge_color='green', 
 
 
 def create_list_group_item_alert(title, value, unit, badge_color='danger', row_color='danger'):
+    """
+    Create a ListGroupItem with title, value and unit Badge, and Modal (for certain titles).
+    Args:
+    title (str): Title of the ListGroupItem.
+    value (str/int/float): Value of the item.
+    unit (str): Unit of the value.
+    badge_color (str): Color of the Badge element (Default: 'danger').
+    row_color (str): Color of the ListGroupItem element (Default: 'danger').
+    Returns:
+    line (dbc.ListGroupItem): A Bootstrap ListGroupItem element.
+    """
     if value == 'n/a':
         badge_color = 'secondary'
         row_color = 'secondary'
@@ -497,7 +516,7 @@ def get_value_or_nan(dict, key):
 #     return is_open
 
 
-# Function to update the time and date every 20sec
+# Callback to update the time and date every 20sec
 @app.callback(
     dash.dependencies.Output('current-time', 'children'),
     dash.dependencies.Output('current-date', 'children'),
@@ -506,7 +525,7 @@ def update_date_time(n_intervals):
     return f"{datetime.utcnow().time().strftime('%H:%M:%S %Z')} UTC", f"{datetime.utcnow().date().strftime('%d-%m-%Y %Z')}"
 
 
-# Function to update moon data every day
+# callback to update moon data every day
 @app.callback(
     #dash.dependencies.Output('moon-visibility', 'children'),
     #dash.dependencies.Output('moon-phase', 'children'),
@@ -542,9 +561,9 @@ def update_moon(n_intervals):
 
 # Function to update sunrise, sunset and moon data every day
 @app.callback(
-    dash.dependencies.Output('sunrise-time', 'children'),
-    dash.dependencies.Output('sunset-time', 'children'),
-    dash.dependencies.Input('interval-day-change', 'n_intervals')
+    Output('sunrise-time', 'children'),
+    Output('sunset-time', 'children'),
+    Input('interval-day-change', 'n_intervals')
 )
 def update_sun(n_intervals):
     try:
@@ -993,11 +1012,7 @@ def update_brightness_graph(n_intervals, time_range):
         if last:
             # Retrieve all the data starting from the latest data
             data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Brightness lux.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
+                'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     # Get the brightness values
