@@ -21,7 +21,7 @@ class MongoDB:
     measurements_col = None
 
     #def __init__(self, uri='mongodb://127.0.0.1:27017/', dbName='WeatherStation', parameters='parameters', measurements='measurements'):
-    def __init__(self, uri='mongodb://localhost:27017/', dbName='WS', parameters='Header', measurements='Readings'):
+    def __init__(self, uri='mongodb://localhost:27010/', dbName='WS', parameters='Header', measurements='Readings'):
         """
         Constructor; initializes defaults.
         Args:
