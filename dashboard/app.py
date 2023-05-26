@@ -7,7 +7,7 @@ import flask
 import logging
 from logging.handlers import TimedRotatingFileHandler
 import dash
-from dash import dcc, html, Input, Output  # , State
+from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 # from dash.exceptions import PreventUpdate
 # import json
@@ -129,7 +129,7 @@ SIDEBAR_STYLE = {
 sidebar = html.Div([
     dbc.Nav(
         [html.Div(card_summary),
-         dcc.Interval(id='interval-livevalues', interval=20000, n_intervals=0),
+         dcc.Interval(id='interval-livevalues', interval=20000, n_intervals=0, disabled=False),
          html.Hr(),
          html.Div(card_info)],
         vertical=True,
@@ -229,7 +229,7 @@ CONTENT_STYLE = {
 
 content = html.Div(children=[
     html.Div(dbc.Col(make_card_grid())),
-    dcc.Interval(id='interval-component', interval=60000, n_intervals=0),  # 1min update
+    dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
 ], className="p-2", style=CONTENT_STYLE)
 
 ######################
