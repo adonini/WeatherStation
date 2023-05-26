@@ -174,7 +174,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
         size="md",
         color="primary",
         delay_show=1000,
-        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "100%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
+        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "97%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
         #id=f"{graph_id}-loading",
     )
     return dbc.Card(
@@ -458,7 +458,7 @@ body_mapping = {
         html.Br(),
         "Resolution: 0.1%"
     ]),
-    "Wind Speed": html.Div([
+    "Wind 1' Avg": html.Div([
         "The wind speed measuring module consists of 4 ultrasonic converters, arranged in pairs of two facing each other via a reflector.",
         html.Br(),
         "The wind measuring values are gliding-averaged over a time span of 1 minute on a base of 100 millisecond values.",
