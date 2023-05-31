@@ -22,6 +22,7 @@ from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
 from waitress import serve
+import uuid
 matplotlib.use('Agg')
 
 #---------------------------------------------------------------------------#
@@ -159,7 +160,7 @@ time_options = [{'label': '1 Hour', 'value': 1},
 def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     # Header
     header = dbc.Row([
-        dbc.Col(html.H4(value_name), width=9),
+        dbc.Col(html.H4(value_name), width=7, align="center"),
         dbc.Col(dcc.Dropdown(
             id=dropdown_id,
             options=time_options,
@@ -167,7 +168,20 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
             clearable=False,
             searchable=False,
             style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
-        ), width=3, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"})
+        ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
+        dbc.Col([
+            dbc.Button(
+                html.I(className="fa fa-refresh", style={"font-size": "24px"}),
+                id=f"{value_name}-refresh-button",
+                n_clicks=0,
+                style={"float": "right", "margin-right": "30px"}, className="position-absolute top-50 end-0 translate-middle-y"),
+            dbc.Tooltip(
+                "Refresh the plot",
+                target=f"{value_name}-refresh-button",
+                placement="bottom",
+                style={"text-transform": "none"},
+            ),
+        ], width=1, align="center"),
     ], align="center")
     # Body
     body = html.Div(dbc.Spinner(
@@ -332,8 +346,8 @@ precipitationtype_dict = {  0: 'None',
                             61: 'Light rain',
                             62: 'Moderate rain',
                             63: 'Heavy rain',
-                            67: 'Light rain',
-                            68: 'Moderate rain',
+                            67: 'Light rain with snow',
+                            68: 'Moderate rain with snow',
                             70: 'Snowfall',
                             71: 'Light snow',
                             72: 'Moderate snow',
@@ -494,7 +508,7 @@ body_mapping = {
         "Resolution: 1 W/m²"
     ]),
     "Precipitation": html.Div([
-        "A Doppler radar module is used to detect precipitation and determine its intensity, quantity, and type. The radar module is mounted on top of the printed board in the device.",
+        "A Doppler radar module is used to detect precipitation and determine its intensity, quantity, and type. The radar module is mounted on top of the printed board in the device. The intensity of the last minute is extrapolated to one hour for the output.",
         html.Br(),
         "The precipitation intensity is always the moving average of the last minute.",
         html.Br(),
@@ -930,12 +944,12 @@ def update_live_values(n_intervals, n=100):
 
 
 # Define the callback function to update the temp graph
-@app.callback([#Output('temp-graph-loading', 'children'),
-               Output('temp-graph', 'figure'),
+@app.callback([Output('temp-graph', 'figure'),
                Output('temp-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('temp_hour_choice', 'value')])
-def update_temp_graph(n_intervals, time_range):
+               Input('temp_hour_choice', 'value'),
+               Input('Temperature-refresh-button', 'n_clicks')])
+def update_temp_graph(n_intervals, time_range, refresh_clicks):
     # Define the projection to query only the required fields
     projection = {
         'added': 1,
@@ -1008,7 +1022,14 @@ def update_temp_graph(n_intervals, time_range):
                       modebar_add=["hovercompare", "v1hovermode"],
                       )
     fig.update_xaxes(showgrid=False)
-    # Return the figure
+
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Temperature-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
+    #if dash.callback_context.triggered[0]['prop_id'] == 'temp_hour_choice.value':
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -1016,8 +1037,9 @@ def update_temp_graph(n_intervals, time_range):
 @app.callback([Output('humidity-graph', 'figure'),
                Output('hum-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('hum_hour_choice', 'value')])
-def update_hum_graph(n_intervals, time_range):
+               Input('hum_hour_choice', 'value'),
+               Input('Humidity-refresh-button', 'n_clicks')])
+def update_hum_graph(n_intervals, time_range, refresh_clicks):
     # Define the projection to query only the required fields
     projection = {
         'added': 1,
@@ -1088,6 +1110,12 @@ def update_hum_graph(n_intervals, time_range):
         if 80 <= latest_data < 90:
             fig.update_traces(fill='tonexty', line_color='orange')
 
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Humidity-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -1095,8 +1123,9 @@ def update_hum_graph(n_intervals, time_range):
 @app.callback([Output('wind-graph', 'figure'),
                Output('wind-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('wind_hour_choice', 'value')])
-def update_wind_graph(n_intervals, time_range):
+               Input('wind_hour_choice', 'value'),
+               Input('Wind Speed-refresh-button', 'n_clicks')])
+def update_wind_graph(n_intervals, time_range, refresh_clicks):
     projection = {
         'added': 1,
         'Average Wind Speed.value': 1,  # use Average
@@ -1219,6 +1248,13 @@ def update_wind_graph(n_intervals, time_range):
                       legend=dict(x=1, y=0.9),
                       )
     fig.update_xaxes(showgrid=False)
+
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Wind Speed-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -1226,8 +1262,9 @@ def update_wind_graph(n_intervals, time_range):
 @app.callback([Output('brightness-graph', 'figure'),
                Output('brightness-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('brightness_hour_choice', 'value')])
-def update_brightness_graph(n_intervals, time_range):
+               Input('brightness_hour_choice', 'value'),
+               Input('Brightness-refresh-button', 'n_clicks')])
+def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     projection = {
         'added': 1,
         'Brightness lux.value': 1,
@@ -1281,7 +1318,13 @@ def update_brightness_graph(n_intervals, time_range):
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '))
     fig.update_xaxes(showgrid=False)
-    # Return the figure
+
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Brightness-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -1290,9 +1333,10 @@ def update_brightness_graph(n_intervals, time_range):
 @app.callback([Output('wind-rose', 'figure'),
                Output('windrose-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('windrose_hour_choice', 'value')]
+               Input('windrose_hour_choice', 'value'),
+               Input('Wind Rose-refresh-button', 'n_clicks')]
               )
-def update_wind_rose(n_intervals, time_range):
+def update_wind_rose(n_intervals, time_range, refresh_clicks):
     # Fetch the wind data from the MongoDB database for the last x hours
     projection = {
         "_id": 0,
@@ -1403,6 +1447,13 @@ def update_wind_rose(n_intervals, time_range):
             "N-N-W",
         ]
     )
+
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Wind Rose-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -1410,8 +1461,9 @@ def update_wind_rose(n_intervals, time_range):
 @app.callback([Output('radiation-graph', 'figure'),
                Output('rad-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
-               Input('rad_hour_choice', 'value')])
-def update_radiation_graph(n_intervals, time_range):
+               Input('rad_hour_choice', 'value'),
+               Input('Global Radiation-refresh-button', 'n_clicks')])
+def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     projection = {
         'added': 1,
         'Global Radiation.value': 1,
@@ -1469,7 +1521,13 @@ def update_radiation_graph(n_intervals, time_range):
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation %{y:.2f} W/m^2<br><extra></extra> '))
     fig.update_xaxes(showgrid=False)
-    # Return the figure
+
+    # Check if the refresh button was clicked
+    ctx = dash.callback_context
+    button_id = 'Global Radiation-refresh-button'
+    if button_id in ctx.triggered[0]['prop_id']:
+        # Reset the zoom by setting 'uirevision' to a unique value
+        fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
