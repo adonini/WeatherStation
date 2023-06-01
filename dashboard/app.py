@@ -198,7 +198,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
         className="m-2 shadow",
-        style={"minWidth": "36rem"},
+        style={"minWidth": "33rem"},
     )
 
 
@@ -274,8 +274,8 @@ app.layout = html.Div([
     ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
     html.Hr(),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-5 col-sm-12 m-0 ps-0"),
-        html.Div(content, className="col-xl-10 col-lg-8 col-md-7 col-sm-12"),
+        html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-5 col-sm-12 col-12 m-0 ps-0"),
+        html.Div(content, className="col-xl-9 col-lg-8 col-md-7 col-sm-12 col-12"),
         # dcc.Store inside the user's current browser session
         #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
