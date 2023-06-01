@@ -267,11 +267,12 @@ navbar_menu = dbc.DropdownMenu([
 
 app.layout = html.Div([
     dbc.Row([
-        dbc.Col(navbar_menu, width=1, align="center"),
-        dbc.Col(html.Div(html.H1("LST-1 Weather Station", className="display-4 text-center")), width=9, align="center"),
-        dbc.Col(html.Div(html.Img(src=app.get_asset_url('logo.png'), height="60px", className="position-absolute top-50 end-0 translate-middle-y")), align="center", className="position-relative", width=1),
-    ], style={"max-height": "95px", "margin-top": "20px", 'zindex': '999'}, className='d-flex justify-content-between align-items-center break-text me-2 ms-1'),
-    html.Hr(className="mt-sm-4"),
+        dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
+        dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
+        dbc.Col(html.Img(src=app.get_asset_url('logo.png'), height="60px", className='align-self-center me-lg-4 ml-lg-4'),
+                className='d-flex align-items-center justify-content-lg-end justify-content-center mt-2 order-1 order-lg-3', width=1),
+    ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
+    html.Hr(),
     dbc.Row([
         html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-5 col-sm-12 m-0 ps-0"),
         html.Div(content, className="col-xl-10 col-lg-8 col-md-7 col-sm-12"),
