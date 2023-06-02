@@ -194,11 +194,11 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
-            dbc.CardBody(body, style={"maxHeight": 500, "width": "100%"}),
+            dbc.CardBody(body, style={"maxHeight": 500, "width": "100%", "padding": 0}),
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
         className="m-2 shadow",
-        style={"minWidth": "33rem"},
+        style={"minWidth": "36rem"},
     )
 
 
@@ -274,8 +274,8 @@ app.layout = html.Div([
     ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
     html.Hr(),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-5 col-sm-12 col-12 m-0 ps-0"),
-        html.Div(content, className="col-xl-9 col-lg-8 col-md-7 col-sm-12 col-12"),
+        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
+        html.Div(content, className="col-xl-10 col-lg-8 col-md-8 col-sm-12 col-12"),
         # dcc.Store inside the user's current browser session
         #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
@@ -575,7 +575,7 @@ def create_list_group_item(title, value, unit,  timestamp, badge_color='green', 
         body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem(
             dbc.Row([
-                dbc.Col(html.A(title, id=f"open_{title}", href="#", n_clicks=0, className="justify-content-between", style={"color": "var(--primary)", "textDecoration": "none"})),
+                dbc.Col(html.A(title, id=f"open_{title}", href="#", n_clicks=0, className="align-items-center justify-content-center", style={"color": "var(--primary)", "textDecoration": "none"})),
                 dbc.Modal([
                     dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
                     dbc.ModalBody(body),
@@ -585,16 +585,16 @@ def create_list_group_item(title, value, unit,  timestamp, badge_color='green', 
                 dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="rounded border-bottom position-relative"
+            className="border-bottom position-relative"
         )
     else:
         line = dbc.ListGroupItem(
             dbc.Row([
-                dbc.Col(title, className="justify-content-between"),
+                dbc.Col(title, className="align-items-center justify-content-center"),
                 dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="rounded border-bottom position-relative"
+            className="border-bottom position-relative"
         )
     return line
 
@@ -631,7 +631,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                 ),
                 dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="rounded border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative")
     else:
         line = dbc.ListGroupItem([
             dbc.Row([
@@ -642,7 +642,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                     ], direction="horizontal", gap=1)),
                 dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="rounded border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative")
     return line
 
 
