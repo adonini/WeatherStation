@@ -316,7 +316,7 @@ def speed_labels(bins, units):
 
 
 # Define our bins and labels for speed and wind
-spd_bins = [-1, 0, 10, 20, 30, 40, 50, 60, np.inf]
+spd_bins = [-1, 2, 6, 12, 20, 29, 39, 50, 62, 75, 89, 103, np.inf]
 spd_labels = speed_labels(spd_bins, units='km/h')
 dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)  # np.arange(-7.5, 370, 15)
 dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
@@ -331,7 +331,9 @@ spd_colors_speed = ["#ffffff",
                     "#aa00ff",
                     "#ff00ff",
                     "#cc0000",
-                    "#ffaa00",
+                    "#ff6a00", #"#f29186",
+                    "#ffd500",
+                    "#000000"
                     ]
 
 
@@ -1409,6 +1411,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
     #print(rose)
     # Create the wind rose plot
     fig = go.Figure()
+    #print(rose.columns)
     for i, col in enumerate(rose.columns):
         fig.add_trace(
             go.Barpolar(
@@ -1416,18 +1419,26 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                 theta=rose.index.categories,
                 name=col,
                 marker_color=spd_colors_speed[i],
-                hovertemplate="frequency: %{r:.2f}%<br>direction: %{theta:.2f} deg <br> %{text} <extra></extra> ",
-            )
+                hovertemplate=(
+                                "frequency: %{r:.2f}%<br>"
+                                "direction: %{theta:.1f} deg (%{text})<br>"
+                                "speed: %{customdata}<extra></extra>"
+                            ),
+                customdata=[col] * len(rose.index.categories),
+                )
         )
 
     fig.update_layout(
         autosize=False,
-        polar_angularaxis_rotation=90,
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
         margin=dict(l=35, r=20, t=20, b=20),
         uirevision=True,
+        #polar=dict(radialaxis=dict(showticklabels=False)),
+        polar_radialaxis_ticksuffix='%',
+        polar_angularaxis_rotation=90,
+        legend=dict(title="<b>Beaufort scale<b>", y=0.9),
         #width=620,
         #height=400,
         #template='plotly_white',
