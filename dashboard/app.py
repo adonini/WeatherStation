@@ -145,7 +145,7 @@ sidebar = html.Div([
 # plots configuration
 config = {
     'displaylogo': False,  # remove plotly logo
-    'modeBarButtonsToRemove': ['resetScale'],
+    'modeBarButtonsToRemove': ['resetScale', 'lasso2d', 'select2d'],
     'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
 }
 
@@ -198,7 +198,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
         className="m-2 shadow",
-        style={"minWidth": "36rem"},
+        style={"minWidth": "36rem", "maxHeight": "36rem"},
     )
 
 
@@ -998,7 +998,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     fig.add_trace(go.Scatter(x=timestamps, y=temps,
                              name='Temperature',
                              line_color="#316395",
-                             hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> ')
+                             hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
+                             connectgaps=False,
                              #line=dict(color='firebrick')
                              )
                   )
@@ -1007,7 +1008,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     fig.add_trace(go.Scatter(x=timestamps, y=dews,
                              name='Dew Point',
                              line_color='firebrick',
-                             hovertemplate=('%{x}<br>' + 'Dew Point: %{y:.2f} °C <br><extra></extra> ')
+                             hovertemplate=('%{x}<br>' + 'Dew Point: %{y:.2f} °C <br><extra></extra> '),
+                             connectgaps=False,
                              )
                   )
     fig.update_layout(yaxis_range=[-30, 30],
@@ -1089,7 +1091,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                              name='Humidity',
                              hoveron='points',
                              line_color="#316395",
-                             hovertemplate=('%{x}<br>' + 'Humidity: %{y:.2f} %<br><extra></extra> ')
+                             hovertemplate=('%{x}<br>' + 'Humidity: %{y:.2f} %<br><extra></extra> '),
+                             connectgaps=False,
                              )
                   )
     fig.update_layout(yaxis_range=[0, 100],
@@ -1185,7 +1188,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              name=w_name,
                              hoveron='points',
                              line_color="#316395",
-                             hovertemplate=("%{x}<br>" + "Wind 1' Avg: %{y:.2f} km/h <br><extra></extra> ")
+                             hovertemplate=("%{x}<br>" + "Wind 1' Avg: %{y:.2f} km/h <br><extra></extra> "),
+                             connectgaps=False,
                              )
                   )
     # Change wind graph color if above limit
@@ -1201,7 +1205,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              name=g_name,
                              hoveron='points',
                              line_color='#86ce00',
-                             hovertemplate=('%{x}<br>' + 'Wind Gusts: %{y:.2f} km/h <br><extra></extra> ')
+                             hovertemplate=('%{x}<br>' + 'Wind Gusts: %{y:.2f} km/h <br><extra></extra> '),
+                             connectgaps=False,
                              )
                   )
     # Change gust graph color if above limit
@@ -1219,7 +1224,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              name=w10_name,
                              hoveron='points',
                              line_color="rgb(219,112,147)",
-                             hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> ")
+                             hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> "),
+                             connectgaps=False,
                              )
                   )
     # Change wind 10' graph color if above limit
@@ -1317,7 +1323,7 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     fig.update_layout(yaxis_range=[0, 160000],
                       uirevision=True,
                       )
-    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '))
+    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
 
     # Check if the refresh button was clicked
@@ -1420,7 +1426,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
-        margin=dict(l=20, r=20, t=33, b=20),
+        margin=dict(l=35, r=20, t=20, b=20),
         uirevision=True,
         #width=620,
         #height=400,
@@ -1520,7 +1526,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     fig.update_layout(yaxis_range=[0, 1300],
                       uirevision=True,
                       )
-    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation %{y:.2f} W/m^2<br><extra></extra> '))
+    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
 
     # Check if the refresh button was clicked

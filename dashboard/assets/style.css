@@ -64,3 +64,19 @@
     max-width: 80%;
   }
 }
+
+.tooltip-inner {
+  background-color: rgba(107 ,115 ,136);
+  }
+  .tooltip.bs-tooltip-right .arrow:before {
+      border-right-color: rgba(107 ,115 ,136);
+  }
+  .tooltip.bs-tooltip-left .arrow:before {
+      border-left-color: rgba(107 ,115 ,136);
+  }
+  .tooltip.bs-tooltip-bottom .arrow:before {
+      border-bottom-color: rgba(107 ,115 ,136);
+  }
+  .tooltip.bs-tooltip-top .arrow:before {
+      border-top-color: rgba(107 ,115 ,136);
+  }
