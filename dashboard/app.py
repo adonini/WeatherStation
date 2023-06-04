@@ -294,9 +294,9 @@ def speed_labels(bins, units):
         if left == bins[0]:
             labels.append('calm'.format(right))
         elif np.isinf(right):
-            labels.append(f'>{left+0.01} {units}')
+            labels.append(f'>{int(left+0.01)} {units}')
         else:
-            labels.append(f'{left+0.01} - {right-0.99} {units}')
+            labels.append(f'{int(left+0.01)} - {int(right-0.99)} {units}')
 
     return list(labels)
 
