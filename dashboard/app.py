@@ -1409,6 +1409,9 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                 theta=rose.index.categories,
                 name=col,
                 marker_color=spd_colors_speed[i],
+                marker_line_color="darkgray",
+                marker_line_width=1,
+                #opacity=0.8,
                 hovertemplate=("Frequency: %{r:.2f}%<br>"
                                "Direction: %{theta:.1f} deg (%{text})<br>"
                                "Speed: %{customdata}<extra></extra>"),
@@ -1425,9 +1428,16 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         uirevision=True,
         #polar=dict(radialaxis=dict(showticklabels=False)),
         polar_radialaxis_ticksuffix='%',
+        polar_radialaxis_showline=False,
         polar_radialaxis_tickangle=45,
+        polar_radialaxis_ticks="",
         polar_angularaxis_rotation=90,
-        legend=dict(title="<b>Beaufort scale<b>", y=0.9)
+        polar_angularaxis_showline=True,
+        polar_angularaxis_ticks="",
+        polar_radialaxis_gridcolor='lightgray',
+        polar_angularaxis_linecolor='lightgray',
+        legend=dict(title="<b>Beaufort scale<b>", y=0.9),
+        template=None,
     )
     fig.update_xaxes(showline=True, linewidth=1, linecolor="black", mirror=True)
     fig.update_yaxes(showline=True, linewidth=1, linecolor="black", mirror=True)
