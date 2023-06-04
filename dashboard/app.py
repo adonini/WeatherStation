@@ -66,24 +66,6 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
                             'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.5, minimum-scale=0.5'}],
                 )
 
-####################
-# navbar = dbc.Navbar(
-#     dbc.Container(
-#         [
-#             # Use row and col to control vertical alignment of logo / brand
-#             dbc.Row(
-#                 [
-#                     dbc.Col(dbc.NavbarBrand("LST-1 Weather", className="fs-1 text-dark position-absolute  top-0 start-50 translate-middle-x"), width=10),
-#                     dbc.Col(html.Img(src=CTA_LOGO, height="60px", className="position-absolute top-0 end-0"), width=2),
-#                 ],
-#                 #align="center",
-#                 className="g-2 text-center mx-auto",
-#             ),
-#         ]
-#     ),
-#     className="bg-transparent"
-# )
-
 ###################
 #  Sidebar cards
 ##################
@@ -156,33 +138,88 @@ time_options = [{'label': '1 Hour', 'value': 1},
                 {'label': '24 Hours', 'value': 24},
                 {'label': '48 Hours', 'value': 48}]
 
+info_body = html.Div([
+    "A Wind Rose displays the distribution of wind speed and wind direction at a given location. ",
+    html.Br(),
+    "The rays point to the direction from which the wind is coming from, and their length shows the frequency of that direction.",
+    html.Br(),
+    "Each concentric circle represents a different frequency, starting from zero at the center to increasing frequencies at the outer circles.",
+    html.Br(),
+    "The colour depends on the wind speed.",
+    html.Br(),
+    """One of the scales to estimate wind speed is the Beaufort scale,
+    an empirical scale that relates wind speed to observed conditions at sea or on land.""",
+    html.Br(),
+    """Note that the wind speeds in this scale are mean speeds, usually averaged over 10 minutes by convention, and do not capture the speed of wind gusts.""",
+    html.Br(),
+    html.Img(src=app.get_asset_url('BeaufortscaleWebsm.jpg'), style={"max-width": "100%", "height": "auto"}),
+    html.Br(),
+    html.Div(["Image from ", html.A("Howtoons", href="https://howtoons.com/The-Beaufort-Scale", className="text-primary", style={"text-decoration": "none"}, target="_blank")], style={"text-align": "center"}),
+])
+
 
 def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     # Header
-    header = dbc.Row([
-        dbc.Col(html.H4(value_name), width=7, align="center"),
-        dbc.Col(dcc.Dropdown(
-            id=dropdown_id,
-            options=time_options,
-            value=1,
-            clearable=False,
-            searchable=False,
-            style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
-        ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
-        dbc.Col([
-            dbc.Button(
-                html.I(className="fa fa-refresh", style={"font-size": "24px"}),
-                id=f"{value_name}-refresh-button",
-                n_clicks=0,
-                style={"float": "right", "margin-right": "30px"}, className="position-absolute top-50 end-0 translate-middle-y"),
-            dbc.Tooltip(
-                "Refresh the plot",
-                target=f"{value_name}-refresh-button",
-                placement="bottom",
-                style={"text-transform": "none"},
+    if value_name == "Wind Rose":
+        header = dbc.Row([
+            dbc.Col(html.I(className="bi bi-info-circle", id="Wind Rose-info-icon", n_clicks=0, style={"font-size": "24px", "cursor": "pointer"}),
+                    style={"float": "left"}, className="position-absolute top-50 start-0 translate-middle-y", width=1),
+            dbc.Modal([
+                dbc.ModalHeader(dbc.ModalTitle("How to read a Wind Rose"), className="modal-header"),
+                dbc.ModalBody(info_body)],
+                id="modal_Wind Rose",
+                scrollable=True,
+                size="xl",
+                is_open=False,
             ),
-        ], width=1, align="center"),
-    ], align="center")
+            dbc.Col(html.H4(value_name, className="my-auto"), style={"margin-right": "10px"}, width=6, align="center"),
+            dbc.Col(dcc.Dropdown(
+                id=dropdown_id,
+                options=time_options,
+                value=1,
+                clearable=False,
+                searchable=False,
+                style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
+            ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
+            dbc.Col([
+                dbc.Button(
+                    html.I(className="fa fa-refresh", style={"font-size": "24px"}),
+                    id="Wind Rose-refresh-button",
+                    n_clicks=0,
+                    style={"float": "right"}, className="position-absolute top-50 end-0 translate-middle-y"),
+                dbc.Tooltip(
+                    "Refresh the plot",
+                    target="Wind Rose-refresh-button",
+                    placement="bottom",
+                    style={"text-transform": "none"},
+                ),
+            ], width=1, align="center"),
+        ], align="center")
+    else:
+        header = dbc.Row([
+            dbc.Col(html.H4(value_name, className="my-auto"), width=7, align="center"),
+            dbc.Col(dcc.Dropdown(
+                id=dropdown_id,
+                options=time_options,
+                value=1,
+                clearable=False,
+                searchable=False,
+                style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
+            ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
+            dbc.Col([
+                dbc.Button(
+                    html.I(className="fa fa-refresh", style={"font-size": "24px"}),
+                    id=f"{value_name}-refresh-button",
+                    n_clicks=0,
+                    style={"float": "right"}, className="position-absolute top-50 end-0 translate-middle-y"),  # , "margin-right": "30px"
+                dbc.Tooltip(
+                    "Refresh the plot",
+                    target=f"{value_name}-refresh-button",
+                    placement="bottom",
+                    style={"text-transform": "none"},
+                ),
+            ], width=1, align="center"),
+        ], align="center")
     # Body
     body = html.Div(dbc.Spinner(
         size="md",
@@ -246,57 +283,6 @@ content = html.Div(children=[
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
 ], className="p-2", style=CONTENT_STYLE)
 
-######################
-# # Set the layout
-######################
-navbar_menu = dbc.DropdownMenu([
-    dbc.DropdownMenuItem("Other Weather Stations", header=True, className="text-center", style={'text-transform': 'uppercase'}),
-    dbc.DropdownMenuItem("ORM Weather Info", href="http://catserver.ing.iac.es/weather/index.php?miniview=1", target="_blank", className="text-primary text-capitalize", external_link=True),
-    dbc.DropdownMenuItem("MAGIC Weather Info", href="http://www.magic.iac.es/site/weather/index.html", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("TNG Weather Info", href="https://tngweb.tng.iac.es/weather/current", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("GTC Weather Info", href="https://atmosportal.gtc.iac.es/index2.php", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("NOT Weather Info", href="http://www.not.iac.es/weather/", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("Mercator Weather Info", href="http://www.mercator.iac.es/status/meteo/", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("ING Weather Info", href="http://catserver.ing.iac.es/weather/", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem(divider=True),
-    dbc.DropdownMenuItem("Links", header=True, className="text-center", style={'text-transform': 'uppercase'}),
-    dbc.DropdownMenuItem("Windy", href="https://www.windy.com/?800h,28.207,-17.885,8,m:es4afFm", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("AEMET Warnings", href="https://www.aemet.es/en/eltiempo/prediccion/avisos?w=hoy&p=6593&k=coo", className="text-primary text-capitalize", target="_blank", external_link=True),
-    dbc.DropdownMenuItem("Mountain Forecast", href="https://www.mountain-forecast.com/peaks/Roque-de-los-Muchachos/forecasts/2423", className="text-primary text-capitalize", target="_blank", external_link=True),
-], label="Menu", style={'zindex': '999'})
-
-app.layout = html.Div([
-    dbc.Row([
-        dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
-        dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
-        dbc.Col(html.Img(src=app.get_asset_url('logo.png'), height="60px", className='align-self-center me-lg-4 ml-lg-4'),
-                className='d-flex align-items-center justify-content-lg-end justify-content-center mt-2 order-1 order-lg-3', width=1),
-    ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
-    html.Hr(),
-    dbc.Row([
-        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        html.Div(content, className="col-xl-10 col-lg-8 col-md-8 col-sm-12 col-12"),
-        # dcc.Store inside the user's current browser session
-        #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
-        # add an automatic refresh every day of everything
-        dcc.Interval(
-            id='interval-day-change',
-            interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds
-            n_intervals=0
-        )
-    ]),
-    html.Hr(),
-    dbc.Row([
-        html.Div([
-            html.P([
-                html.Small('Large Size Telescope', className="text-secondary"),
-                html.Br(),
-                html.A(html.Span('About', style={"font-size": "13px", "text-decoration": "none"}), href="https://www.lst1.iac.es/index.html", target="_blank", className="text-primary", style={"margin-top": "5px"})
-            ])
-        ])
-    ])
-], className="container-fluid")
-
 
 ##################
 # Wind rose stuff
@@ -322,7 +308,7 @@ dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)  # np.arange(-7.5, 370, 15)
 dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
 # Mapping color for wind direction and speed
 spd_colors_dir = ["#0072dd", "#00c420", "#eded00", "#be00d5", "#0072dd"]
-spd_colors_speed = ["#ffffff",
+spd_colors_speed = ["#d8d8d8",  # #ffffff",
                     "#b2f2ff",
                     "#33ddff",
                     "#00aaff",
@@ -331,7 +317,7 @@ spd_colors_speed = ["#ffffff",
                     "#aa00ff",
                     "#ff00ff",
                     "#cc0000",
-                    "#ff6a00", #"#f29186",
+                    "#ff6a00",  # "#f29186",
                     "#ffd500",
                     "#000000"
                     ]
@@ -569,7 +555,7 @@ body_mapping = {
 }
 
 
-def create_list_group_item(title, value, unit,  timestamp, badge_color='green', row_color='default'):
+def create_list_group_item(title, value, unit, timestamp, badge_color='green', row_color='default'):
     if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
@@ -623,14 +609,12 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
             dbc.Row([
                 dbc.Col([
                     html.I(className="bi bi-exclamation-triangle-fill me-2", style={"display": "inline-block"}),
-                    html.Div(title, id=f"open_{title}", n_clicks=0, style={"display": "inline-block", "cursor": "pointer"}),
-                ], className="d-flex align-items-center"),
+                    html.A(title, id=f"open_{title}", href="#", n_clicks=0, style={"display": "inline-block", "cursor": "pointer", "color": "var(--primary)", "textDecoration": "none"}),
+                ], className="d-flex align-items-center justify-content-center"),
                 dbc.Modal([
                     dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
-                    dbc.ModalBody(body),
-                    #dbc.ModalFooter(dbc.Button("Close", id=f"close_{title}", className="ms-auto", n_clicks=0)),
-                ], id=f"modal_{title}", scrollable=True, is_open=False,
-                ),
+                    dbc.ModalBody(body)
+                ], id=f"modal_{title}", scrollable=True, is_open=False),
                 dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
             ]),
         ], color=row_color, className="border-bottom position-relative")
@@ -668,6 +652,58 @@ def toggle_modal(n1, is_open):
 def get_value_or_nan(dict, key):
     """"Limit to two decimals the output with round"""
     return round(dict[key]['value'], 2) if dict[key]['value'] is not None else 'n/a'
+
+
+######################
+# # Set the layout
+######################
+navbar_menu = dbc.DropdownMenu([
+    dbc.DropdownMenuItem("Other Weather Stations", header=True, className="text-center", style={'text-transform': 'uppercase'}),
+    dbc.DropdownMenuItem("ORM Weather Info", href="http://catserver.ing.iac.es/weather/index.php?miniview=1", target="_blank", className="text-primary text-capitalize", external_link=True),
+    dbc.DropdownMenuItem("MAGIC Weather Info", href="http://www.magic.iac.es/site/weather/index.html", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("TNG Weather Info", href="https://tngweb.tng.iac.es/weather/current", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("GTC Weather Info", href="https://atmosportal.gtc.iac.es/index2.php", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("NOT Weather Info", href="http://www.not.iac.es/weather/", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("Mercator Weather Info", href="http://www.mercator.iac.es/status/meteo/", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("ING Weather Info", href="http://catserver.ing.iac.es/weather/", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem(divider=True),
+    dbc.DropdownMenuItem("Links", header=True, className="text-center", style={'text-transform': 'uppercase'}),
+    dbc.DropdownMenuItem("Windy", href="https://www.windy.com/?800h,28.207,-17.885,8,m:es4afFm", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("AEMET Warnings", href="https://www.aemet.es/en/eltiempo/prediccion/avisos?w=hoy&p=6593&k=coo", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("Mountain Forecast", href="https://www.mountain-forecast.com/peaks/Roque-de-los-Muchachos/forecasts/2423", className="text-primary text-capitalize", target="_blank", external_link=True),
+], label="Menu", style={'zindex': '999'})
+
+app.layout = html.Div([
+    dbc.Row([
+        dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
+        dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
+        dbc.Col(html.Img(src=app.get_asset_url('logo.png'), height="60px", className='align-self-center me-lg-4 ml-lg-4'),
+                className='d-flex align-items-center justify-content-lg-end justify-content-center mt-2 order-1 order-lg-3', width=1),
+    ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
+    html.Hr(),
+    dbc.Row([
+        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
+        html.Div(content, className="col-xl-10 col-lg-8 col-md-8 col-sm-12 col-12"),
+        # dcc.Store inside the user's current browser session
+        #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
+        # add an automatic refresh every day of everything
+        dcc.Interval(
+            id='interval-day-change',
+            interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds
+            n_intervals=0
+        )
+    ]),
+    html.Hr(),
+    dbc.Row([
+        html.Div([
+            html.P([
+                html.Small('Large Size Telescope', className="text-secondary"),
+                html.Br(),
+                html.A(html.Span('About', style={"font-size": "13px", "text-decoration": "none"}), href="https://www.lst1.iac.es/index.html", target="_blank", className="text-primary", style={"margin-top": "5px"})
+            ])
+        ])
+    ])
+], className="container-fluid")
 
 
 ######################
@@ -744,6 +780,12 @@ app.callback(
     State("modal_Pressure", "is_open"),
 )(toggle_modal)
 
+app.callback(
+    Output("modal_Wind Rose", "is_open"),
+    Input("Wind Rose-info-icon", "n_clicks"),
+    State("modal_Wind Rose", "is_open"),
+)(toggle_modal)
+
 
 # callback to enable or disable the intervals based on their respective states in case a modal is open
 @app.callback(
@@ -758,12 +800,13 @@ app.callback(
      Input("modal_Brightness", "is_open"),
      Input("modal_Global Radiation", "is_open"),
      Input("modal_Precipitation", "is_open"),
-     Input("modal_Pressure", "is_open")],
+     Input("modal_Pressure", "is_open"),
+     Input("modal_Wind Rose", "is_open")],
     [State('interval-component', 'disabled'),
      State('interval-livevalues', 'disabled')],
 )
-def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, interval1_disabled, interval2_disabled):
-    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure]):
+def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, is_open_windrose, interval1_disabled, interval2_disabled):
+    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, is_open_windrose]):
         interval1_disabled = True
         interval2_disabled = True
     else:
@@ -774,9 +817,10 @@ def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_
 
 # Callback to update the time and date every 20sec
 @app.callback(
-    dash.dependencies.Output('current-time', 'children'),
-    dash.dependencies.Output('current-date', 'children'),
-    dash.dependencies.Input('interval-livevalues', 'n_intervals'))
+    [Output('current-time', 'children'),
+     Output('current-date', 'children')],
+    [Input('interval-livevalues', 'n_intervals')]
+)
 def update_date_time(n_intervals):
     return f"{datetime.utcnow().time().strftime('%H:%M:%S %Z')} UTC", f"{datetime.utcnow().date().strftime('%d-%m-%Y %Z')}"
 
@@ -785,10 +829,10 @@ def update_date_time(n_intervals):
 @app.callback(
     #dash.dependencies.Output('moon-visibility', 'children'),
     #dash.dependencies.Output('moon-phase', 'children'),
-    dash.dependencies.Output('moon-illumination', 'children'),
-    dash.dependencies.Output('moon-rise', 'children'),
-    dash.dependencies.Output('moon-set', 'children'),
-    dash.dependencies.Input('interval-day-change', 'n_intervals')
+    [Output('moon-illumination', 'children'),
+     Output('moon-rise', 'children'),
+     Output('moon-set', 'children')],
+    [Input('interval-day-change', 'n_intervals')]
 )
 def update_moon(n_intervals):
     elevation = 2200 * u.m
@@ -817,9 +861,9 @@ def update_moon(n_intervals):
 
 # Function to update sunrise, sunset and moon data every day
 @app.callback(
-    Output('sunrise-time', 'children'),
-    Output('sunset-time', 'children'),
-    Input('interval-day-change', 'n_intervals')
+    [Output('sunrise-time', 'children'),
+     Output('sunset-time', 'children')],
+    [Input('interval-day-change', 'n_intervals')]
 )
 def update_sun(n_intervals):
     try:
@@ -921,27 +965,25 @@ def update_live_values(n_intervals, n=100):
         #         live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h')
         #     elif 40 <= w_speed < 50:
         #         live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h', badge_color='warning', row_color='warning')
-
-        if w10_speed != 'n/a':
-            if w10_speed >= 50:
-                live_values[1] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h')
-            elif 40 <= w10_speed < 50:
-                live_values[1] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h', badge_color='warning', row_color='warning')
-
-        # Check gusts speed and change the background color accordingly
-        if g_speed != 'n/a':
-            if g_speed >= 60:
-                live_values[2] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h')
-            elif 50 <= g_speed < 60:
-                live_values[2] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h', badge_color='warning', row_color='warning')
-
         # Check humidity and change the background color accordingly
         if hum != 'n/a':
             if hum >= 90:
                 live_values[0] = create_list_group_item_alert("Humidity", hum, ' %')
             elif 80 <= hum < 90:
-                print(hum)
                 live_values[0] = create_list_group_item_alert("Humidity", hum, ' %', badge_color='warning', row_color='warning')
+
+        if w10_speed != 'n/a':
+            if w10_speed >= 50:
+                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h')
+            elif 40 <= w10_speed < 50:
+                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h', badge_color='warning', row_color='warning')
+
+        # Check gusts speed and change the background color accordingly
+        if g_speed != 'n/a':
+            if g_speed >= 60:
+                live_values[3] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h')
+            elif 50 <= g_speed < 60:
+                live_values[3] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h', badge_color='warning', row_color='warning')
 
     return live_values, dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap")
 
