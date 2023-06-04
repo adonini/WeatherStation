@@ -291,18 +291,19 @@ content = html.Div(children=[
 def speed_labels(bins, units):
     labels = []
     for left, right in zip(bins[:-1], bins[1:]):
+        print(left, right)
         if left == bins[0]:
             labels.append('calm'.format(right))
         elif np.isinf(right):
-            labels.append('>{} {}'.format(left, units))
+            labels.append(f'>{left+0.01} {units}')
         else:
-            labels.append('{} - {} {}'.format(left, right, units))
+            labels.append(f'{left+0.01} - {right-0.99} {units}')
 
     return list(labels)
 
 
 # Define our bins and labels for speed and wind
-spd_bins = [-1, 1, 6, 12, 20, 29, 39, 50, 62, 75, 89, 103, np.inf]
+spd_bins = [-1, 0.99, 5.99, 11.99, 19.99, 28.99, 38.99, 49.99, 61.99, 74.99, 88.99, 102.99, np.inf]
 spd_labels = speed_labels(spd_bins, units='km/h')
 dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)  # np.arange(-7.5, 370, 15)
 dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
