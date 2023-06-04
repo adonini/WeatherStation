@@ -369,9 +369,9 @@ def convert_meteorological_deg2cardinal_dir(deg_measurement):
     elif deg_measurement > 123.75 and deg_measurement <= 146.25:
         return "SE"
     elif deg_measurement > 146.25 and deg_measurement <= 168.75:
-        return "S"
+        return "SSE"
     elif deg_measurement > 168.75 and deg_measurement <= 191.25:
-        return "SSW"
+        return "S"
     elif deg_measurement > 191.25 and deg_measurement <= 213.75:
         return "SSW"
     elif deg_measurement > 213.75 and deg_measurement <= 236.25:
