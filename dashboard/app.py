@@ -291,7 +291,6 @@ content = html.Div(children=[
 def speed_labels(bins, units):
     labels = []
     for left, right in zip(bins[:-1], bins[1:]):
-        print(left, right)
         if left == bins[0]:
             labels.append('calm'.format(right))
         elif np.isinf(right):
@@ -1381,6 +1380,7 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
 
 
 # could check package ROSELY too
+# https://gist.github.com/phobson/41b41bdd157a2bcf6e14
 # Define the callback function that updates the wind rose plot
 @app.callback([Output('wind-rose', 'figure'),
                Output('windrose-timestamp', 'children')],
@@ -1435,8 +1435,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
 
     # Determine the total number of observations and how many have calm conditions
     total_count = wind_data.shape[0]
-    calm_count = wind_data.query("WindSpd == 0").shape[0]
-
+    calm_count = wind_data.query("WindSpd < 1").shape[0]
     rose = (wind_data.assign(WindSpd_bins=lambda df:
             pd.cut(df['WindSpd'], bins=spd_bins, labels=spd_labels, right=True))
             .assign(WindDir_bins=lambda df:
@@ -1480,6 +1479,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         uirevision=True,
         #polar=dict(radialaxis=dict(showticklabels=False)),
         polar_radialaxis_ticksuffix='%',
+        polar_radialaxis_tickangle=45,
         polar_angularaxis_rotation=90,
         legend=dict(title="<b>Beaufort scale<b>", y=0.9),
         #width=620,
