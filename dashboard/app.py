@@ -304,11 +304,12 @@ def speed_labels(bins, units):
 # Define our bins and labels for speed and wind
 spd_bins = [-1, 0.99, 5.99, 11.99, 19.99, 28.99, 38.99, 49.99, 61.99, 74.99, 88.99, 102.99, np.inf]
 spd_labels = speed_labels(spd_bins, units='km/h')
-dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)  # np.arange(-7.5, 370, 15)
+# represent boundaries of wind direction bins. Each bin spans 22.5 degrees.
+dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)
+# assign midpoint of each bin
 dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
-# Mapping color for wind direction and speed
-spd_colors_dir = ["#0072dd", "#00c420", "#eded00", "#be00d5", "#0072dd"]
-spd_colors_speed = ["#d8d8d8",  # #ffffff",
+# Mapping color for wind speed
+spd_colors_speed = ["#d8d8d8",
                     "#b2f2ff",
                     "#33ddff",
                     "#00aaff",
@@ -317,7 +318,7 @@ spd_colors_speed = ["#d8d8d8",  # #ffffff",
                     "#aa00ff",
                     "#ff00ff",
                     "#cc0000",
-                    "#ff6a00",  # "#f29186",
+                    "#ff6a00",
                     "#ffd500",
                     "#000000"
                     ]
@@ -327,23 +328,23 @@ spd_colors_speed = ["#d8d8d8",  # #ffffff",
 # Random stuff
 ##############
 # decode precipitation type
-precipitationtype_dict = {  0: 'None',
-                            40: 'Precipitation present',
-                            51: 'Light drizzle',
-                            52: 'Moderate drizzle',
-                            53: 'Heavy drizzle',
-                            61: 'Light rain',
-                            62: 'Moderate rain',
-                            63: 'Heavy rain',
-                            67: 'Light rain with snow',
-                            68: 'Moderate rain with snow',
-                            70: 'Snowfall',
-                            71: 'Light snow',
-                            72: 'Moderate snow',
-                            73: 'Heavy snow',
-                            74: 'Ice pallets',
-                            89: 'Heavy hail',
-                            }
+precipitationtype_dict = {0: 'None',
+                          40: 'Precipitation present',
+                          51: 'Light drizzle',
+                          52: 'Moderate drizzle',
+                          53: 'Heavy drizzle',
+                          61: 'Light rain',
+                          62: 'Moderate rain',
+                          63: 'Heavy rain',
+                          67: 'Light rain with snow',
+                          68: 'Moderate rain with snow',
+                          70: 'Snowfall',
+                          71: 'Light snow',
+                          72: 'Moderate snow',
+                          73: 'Heavy snow',
+                          74: 'Ice pallets',
+                          89: 'Heavy hail',
+                          }
 
 
 def convert_meteorological_deg2cardinal_dir(deg_measurement):
@@ -353,7 +354,6 @@ def convert_meteorological_deg2cardinal_dir(deg_measurement):
     :param deg_measurement:
     :return:
     """
-
     if deg_measurement > 348.75 or deg_measurement <= 11.25:
         return "N"
     elif deg_measurement > 11.25 and deg_measurement <= 33.25:
@@ -1005,14 +1005,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
         '_id': 0
     }
     # Query the data from the database
-    data = list(collection.find({
-        'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Air Temperature.value': {'$ne': None},
-        # 'Dew Point Temperature.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },
-        projection, sort=[('added', pymongo.DESCENDING)]))
+    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+                                projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not data:
         # Query the latest data from the database
@@ -1022,14 +1016,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Air Temperature.value': {'$ne': None},
-                # 'Dew Point Temperature.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
-                projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('added', pymongo.DESCENDING)]))
     # Get the temperature values and the dew-point values
     temps = [d['Air Temperature']['value'] for d in data]
     dews = [d['Dew Point Temperature']['value'] for d in data]
@@ -1096,14 +1084,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
         '_id': 0
     }
     # Query the data from the database
-    data = list(collection.find({
-        'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Relative Humidity.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },  # filter out None values
-        projection).sort('added', pymongo.DESCENDING))  # first value is the newest
-    #print(data)
+    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+                                projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
@@ -1112,13 +1094,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Relative Humidity.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
-                projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('added', pymongo.DESCENDING)]))
 
     # Get the most recent value
     latest_data = data[0]['Relative Humidity']['value']
@@ -1184,14 +1161,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
         '_id': 0
     }
     # Query the data from the database
-    data = list(collection.find({
-        'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Average Wind Speed.value': {'$ne': None},
-        # 'Max Wind.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },
-        projection).sort('added', pymongo.DESCENDING))  # first value is the newest
+    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+                                projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
@@ -1200,14 +1171,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Average Wind Speed.value': {'$ne': None},
-                # 'Max Wind.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
-                projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('added', pymongo.DESCENDING)]))
     # Create the figure
     fig = go.Figure()
 
@@ -1324,13 +1289,8 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
         '_id': 0
     }
     # Query the data from the database
-    data = list(collection.find({
-        'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Brightness lux.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },
-        projection, sort=[('added', pymongo.DESCENDING)]))
+    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+                                projection, sort=[('added', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
@@ -1398,14 +1358,8 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         'Time.value': 1,
         'Date.value': 1,
     }
-    datapoints = list(collection.find({
-        "added": {"$gte": datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Average Wind Speed.value': {'$ne': None},
-        # 'Mean Wind Direction.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },
-        projection, sort=[('added', pymongo.DESCENDING)]))
+    datapoints = list(collection.find({"added": {"$gte": datetime.utcnow() - timedelta(hours=time_range)}},
+                                      projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not datapoints:
         # Query the latest data from the database
@@ -1415,14 +1369,8 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            datapoints = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Average Wind Speed.value': {'$ne': None},
-                # 'Mean Wind Direction.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
-                projection, sort=[('added', pymongo.DESCENDING)]))
+            datapoints = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+                                              projection, sort=[('added', pymongo.DESCENDING)]))
 
     wind_data = json_normalize(datapoints).rename(columns={'Mean 10 Wind Speed.value': 'WindSpd',
                                                            'Mean Wind Direction.value': 'WindDir',
@@ -1441,7 +1389,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
             .assign(WindDir_bins=lambda df:
                     pd.cut(df['WindDir'], bins=dir_bins, labels=dir_labels, right=False)
                     )
-            .replace({'WindDir_bins': {360: 0}})
+            .replace({'WindDir_bins': {360: 0}})  # unify the 360° and 0° bins under the 0° label
             .groupby(by=['WindSpd_bins', 'WindDir_bins'])
             .size()
             .unstack(level='WindSpd_bins')
@@ -1461,13 +1409,11 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                 theta=rose.index.categories,
                 name=col,
                 marker_color=spd_colors_speed[i],
-                hovertemplate=(
-                                "Frequency: %{r:.2f}%<br>"
-                                "Direction: %{theta:.1f} deg (%{text})<br>"
-                                "Speed: %{customdata}<extra></extra>"
-                            ),
+                hovertemplate=("Frequency: %{r:.2f}%<br>"
+                               "Direction: %{theta:.1f} deg (%{text})<br>"
+                               "Speed: %{customdata}<extra></extra>"),
                 customdata=[col] * len(rose.index.categories),
-                )
+            )
         )
 
     fig.update_layout(
@@ -1481,10 +1427,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         polar_radialaxis_ticksuffix='%',
         polar_radialaxis_tickangle=45,
         polar_angularaxis_rotation=90,
-        legend=dict(title="<b>Beaufort scale<b>", y=0.9),
-        #width=620,
-        #height=400,
-        #template='plotly_white',
+        legend=dict(title="<b>Beaufort scale<b>", y=0.9)
     )
     fig.update_xaxes(showline=True, linewidth=1, linecolor="black", mirror=True)
     fig.update_yaxes(showline=True, linewidth=1, linecolor="black", mirror=True)
@@ -1533,13 +1476,8 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
         '_id': 0
     }
     # Query the data from the database
-    data = list(collection.find({
-        'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)},
-        # 'Global Radiation.value': {'$ne': None},
-        # 'Time.value': {'$ne': None},
-        # 'Date.value': {'$ne': None}
-        },
-        projection, sort=[('added', pymongo.DESCENDING)]))
+    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+                                projection, sort=[('added', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database and avoid having None values
         last = collection.find_one({},
@@ -1548,13 +1486,8 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)},
-                # 'Global Radiation.value': {'$ne': None},
-                # 'Time.value': {'$ne': None},
-                # 'Date.value': {'$ne': None}
-                },
-                projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('added', pymongo.DESCENDING)]))
     # Get the global radiation values
     rad = [d['Global Radiation']['value'] for d in data]
     # Get the WS timestamps
