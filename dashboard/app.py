@@ -1177,7 +1177,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
 def update_wind_graph(n_intervals, time_range, refresh_clicks):
     projection = {
         'added': 1,
-        'Average Wind Speed.value': 1,  # use Average
+        'Average Wind Speed.value': 1,
         'Max Wind.value': 1,
         'Mean 10 Wind Speed.value': 1,
         'Time.value': 1,
@@ -1393,7 +1393,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
     projection = {
         "_id": 0,
         "added": 1,
-        "Average Wind Speed.value": 1,
+        "Mean 10 Wind Speed.value": 1,
         "Mean Wind Direction.value": 1,
         'Time.value': 1,
         'Date.value': 1,
@@ -1424,7 +1424,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                 },
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
-    wind_data = json_normalize(datapoints).rename(columns={'Average Wind Speed.value': 'WindSpd',
+    wind_data = json_normalize(datapoints).rename(columns={'Mean 10 Wind Speed.value': 'WindSpd',
                                                            'Mean Wind Direction.value': 'WindDir',
                                                            })
 
