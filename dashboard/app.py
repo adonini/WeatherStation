@@ -1463,9 +1463,9 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                 name=col,
                 marker_color=spd_colors_speed[i],
                 hovertemplate=(
-                                "frequency: %{r:.2f}%<br>"
-                                "direction: %{theta:.1f} deg (%{text})<br>"
-                                "speed: %{customdata}<extra></extra>"
+                                "Frequency: %{r:.2f}%<br>"
+                                "Direction: %{theta:.1f} deg (%{text})<br>"
+                                "Speed: %{customdata}<extra></extra>"
                             ),
                 customdata=[col] * len(rose.index.categories),
                 )
@@ -1476,7 +1476,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
-        margin=dict(l=35, r=20, t=20, b=20),
+        margin=dict(l=25, r=0, t=20, b=20),
         uirevision=True,
         #polar=dict(radialaxis=dict(showticklabels=False)),
         polar_radialaxis_ticksuffix='%',
@@ -1580,7 +1580,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     fig.update_layout(yaxis_range=[0, 1300],
                       uirevision=True,
                       )
-    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
+    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
 
     # Check if the refresh button was clicked
