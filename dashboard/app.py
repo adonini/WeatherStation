@@ -1023,6 +1023,14 @@ def update_live_values(n_intervals, n=100):
             elif 50 <= g_speed < 60:
                 live_values[3] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h', badge_color='warning', row_color='warning')
 
+        # Check rain  and change the background color accordingly
+        if p_type != 'n/a':
+            if p_type != 'None':
+                live_values[9] = create_list_group_item_alert("Precipitation", p_type, '')
+        if p_int != 'n/a':
+            if p_int > 0:
+                live_values[10] = create_list_group_item_alert("Precipitation Intensity", p_int, ' mm/h')
+
     return live_values, dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap")
 
 
