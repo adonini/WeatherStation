@@ -23,6 +23,8 @@ import astropy.units as u
 from astroplan import Observer
 from waitress import serve
 import uuid
+import xml.etree.ElementTree as ET
+
 matplotlib.use('Agg')
 
 #---------------------------------------------------------------------------#
@@ -292,7 +294,7 @@ def speed_labels(bins, units):
     labels = []
     for left, right in zip(bins[:-1], bins[1:]):
         if left == bins[0]:
-            labels.append('calm'.format(right))
+            labels.append('calm')
         elif np.isinf(right):
             labels.append(f'>{int(left+0.01)} {units}')
         else:
@@ -426,25 +428,61 @@ def get_magic_values():
         response = requests.get(url, timeout=5)  # set a timeout of 5s to get a response
         soup = BeautifulSoup(response.content, "html.parser")
         # Find the table row that contains the values
-        tng_dust_row = soup.find("a", {"href": "javascript:siteWindowdust()"}).parent.parent
-        tng_dust_value = tng_dust_row.find_all("td")[1].text.strip()
+        #tng_dust_row = soup.find("a", {"href": "javascript:siteWindowdust()"}).parent.parent
+        #tng_dust_value = tng_dust_row.find_all("td")[1].text.strip()
         cloud_row = soup.find("a", {"href": "javascript:siteWindowpyro()"}).parent.parent
         cloud_value = cloud_row.find_all("td")[1].text.strip()
         tran9_row = soup.find("a", {"href": "javascript:siteWindowlidar()"}).parent.parent
         tran9_value = tran9_row.find_all("td")[1].text.strip()
-        return tng_dust_value, cloud_value, tran9_value
+        return cloud_value, tran9_value
     except requests.exceptions.Timeout:
         logger.error('The request to the MAGIC website timed out.')
-        tng_dust_value = 'n/a'
+        #tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
-        return tng_dust_value, cloud_value, tran9_value
+        return cloud_value, tran9_value
     except Exception:
         logger.warning('Unable to access MAGIC values!')
-        tng_dust_value = 'n/a'
+        #tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
-        return tng_dust_value, cloud_value, tran9_value
+        return cloud_value, tran9_value
+
+
+def get_tng_dust_value():
+    try:
+        # URL of the XML feed
+        xml_url = "https://tngweb.tng.iac.es/api/meteo/weather/feed.xml"
+
+        # Make a request with a timeout of 5 seconds
+        response = requests.get(xml_url, timeout=5)
+        xml_data = response.text
+
+        # Parse the XML data
+        root = ET.fromstring(xml_data)
+
+        # Find the Dust element and extract its value
+        namespace = {"tngw": "http://www.tng.iac.es/weather/current/rss/tngweather"}
+        dust_element = root.find(".//tngw:dustTotal", namespace)
+        dust_value = dust_element.text if dust_element is not None else 'n/a'
+
+        # Round the Dust value to two decimal places
+        if dust_value != 'n/a':
+            dust_value = round(float(dust_value), 2)
+
+        return dust_value
+
+    except requests.exceptions.Timeout:
+        # Handle timeout error
+        logger.error('The request to the TNG feed timed out.')
+        dust_value = 'n/a'
+        return dust_value
+
+    except Exception:
+        # Handle general error
+        logger.warning('Unable to access TNG values!')
+        dust_value = 'n/a'
+        return dust_value
 
 
 # define the body of each modal
@@ -888,8 +926,8 @@ def update_sun(n_intervals):
 def update_live_values(n_intervals, n=100):
     # Get the latest reading from the database
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
-    tng_dust_value, cloud_value, tran9_value = get_magic_values()
-
+    cloud_value, tran9_value = get_magic_values()
+    tng_dust_value = get_tng_dust_value()
     # Get the WS timestamps
     time = latest_data['Time']['value']
     date = latest_data['Date']['value']
