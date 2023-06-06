@@ -152,9 +152,9 @@ info_body = html.Div([
     """One of the scales to estimate wind speed is the Beaufort scale,
     an empirical scale that relates wind speed to observed conditions at sea or on land.""",
     html.Br(),
-    """Note that the wind speeds in this scale are mean speeds, usually averaged over 10 minutes by convention, and do not capture the speed of wind gusts.""",
+    """Note that the wind speeds in this scale are mean speeds, averaged over 10 minutes by convention, and do not capture the speed of wind gusts.""",
     html.Br(),
-    html.Img(src=app.get_asset_url('BeaufortscaleWebsm.jpg'), style={"max-width": "100%", "height": "auto"}),
+    html.Img(src=app.get_asset_url('Beaufortscale.jpeg'), style={"max-width": "100%", "height": "auto"}),
     html.Br(),
     html.Div(["Image from ", html.A("Howtoons", href="https://howtoons.com/The-Beaufort-Scale", className="text-primary", style={"text-decoration": "none"}, target="_blank")], style={"text-align": "center"}),
 ])
