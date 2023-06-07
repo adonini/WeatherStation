@@ -71,11 +71,69 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 ###################
 #  Sidebar cards
 ##################
-# fs-{size} text heading size
-# w-{option} width relative to parent
-# bg-{color} background color
+summary_body = html.Div([
+    "Telescope cannot be operated under certain weather conditions.",
+    html.Br(),
+    "If a value exceeds the safety limit, it will be highlighted in red, while if it is close to reaching the safety limit, it will be displayed in orange.",
+    html.Br(),
+    "Below the actions that have to be taken in case these limits are exceeded during observations.",
+    html.Br(),
+    html.Br(),
+    html.Table([
+        html.Tr([
+            html.Th("Condition", style={"font-weight": "bold", "text-align": "center"}),
+            html.Th("Action", style={"font-weight": "bold", "text-align": "center"})],
+            style={"border-bottom": "1px solid black"}),
+        html.Tr([
+            html.Td("Wind 10' Avg above 50 km/h", style={"padding-right": "40px"}),
+            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+            style={"border-bottom": "1px solid black"}),
+        html.Tr([
+            html.Td("Wind gusts above 60 km/h", style={"padding-right": "40px"}),
+            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+            style={"border-bottom": "1px solid black"}),
+        html.Tr([
+            html.Td("Humidity above 90%", style={"padding-right": "40px"}),
+            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+            style={"border-bottom": "1px solid black"}),
+        html.Tr([
+            html.Td("Precipitation is detected", style={"padding-right": "40px"}),
+            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+            style={"border-bottom": "1px solid black"})
+    ], style={"border-collapse": "collapse", "margin": "auto"}),
+    #html.Br(),
+    #"In case the weather safety limits are exceeded BEFORE the start of observation, the telescope has to be kept in parking position until weather improves."
+])
+
+
+header_summary = dbc.Row([
+    dbc.Col(
+        html.I(className="bi bi-info-circle", id="summary-info-icon", n_clicks=0, style={"font-size": "24px", "cursor": "pointer"}),
+        className="position-absolute top-50 start-0 translate-middle-y",
+        width=1
+    ),
+    dbc.Modal([
+        dbc.ModalHeader([
+            dbc.ModalTitle("Summary of meteorological safety limits"),
+        ], className="modal-header"),
+        dbc.ModalBody(summary_body)],
+        id="modal_summary",
+        scrollable=True,
+        size="xl",
+        is_open=False,
+    ),
+    dbc.Col(
+        html.H4("Current values", className="my-auto text-center ms-3"),
+        #style={"margin-right": "10px"},
+        width=11,
+        align="center",
+        className="w-100 align-items-center justify-content-center"
+    )
+], className='d-flex flex-lg-nowrap flex-column flex-lg-row align-items-center justify-content-around text-center')
+
+
 card_summary = dbc.Card([
-    dbc.CardHeader("Current values", className="card text-white bg-primary w-100 fs-5"),
+    dbc.CardHeader(header_summary, className="card text-white bg-primary", style={'width': '100%'}),
     dbc.CardBody([
         dbc.ListGroup(id='live-values', flush=True),
     ], className="p-0 m-0"),  # removes the margin and the padding
@@ -720,8 +778,8 @@ app.layout = html.Div([
     ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
     html.Hr(),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-2 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        html.Div(content, className="col-xl-10 col-lg-8 col-md-8 col-sm-12 col-12"),
+        html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
+        html.Div(content, className="col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
         # dcc.Store inside the user's current browser session
         #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
@@ -824,6 +882,12 @@ app.callback(
     State("modal_Wind Rose", "is_open"),
 )(toggle_modal)
 
+app.callback(
+    Output("modal_summary", "is_open"),
+    Input("summary-info-icon", "n_clicks"),
+    State("modal_summary", "is_open"),
+)(toggle_modal)
+
 
 # callback to enable or disable the intervals based on their respective states in case a modal is open
 @app.callback(
@@ -839,12 +903,17 @@ app.callback(
      Input("modal_Global Radiation", "is_open"),
      Input("modal_Precipitation", "is_open"),
      Input("modal_Pressure", "is_open"),
-     Input("modal_Wind Rose", "is_open")],
+     Input("modal_Wind Rose", "is_open"),
+     Input("modal_summary", "is_open")],
     [State('interval-component', 'disabled'),
      State('interval-livevalues', 'disabled')],
 )
-def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, is_open_windrose, interval1_disabled, interval2_disabled):
-    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction, is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation, is_open_pressure, is_open_windrose]):
+def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
+                     is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation,
+                     is_open_pressure, is_open_windrose, is_open_summary, interval1_disabled, interval2_disabled):
+    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
+            is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation,
+            is_open_pressure, is_open_windrose, is_open_summary]):
         interval1_disabled = True
         interval2_disabled = True
     else:
