@@ -641,7 +641,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
         badge_color = 'secondary'
         row_color = 'secondary'
     # Create a list of titles that require a modal and check if the value exists in the list
-    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts"]:  # "Wind Speed",
+    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts", "Precipitation", "Precipitation Intensity"]:  # "Wind Speed",
         body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem([
             dbc.Row([
