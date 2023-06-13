@@ -65,6 +65,18 @@
   }
 }
 
+@media (min-width: 1200px) {
+  .col-xl-3 {
+    flex: 0 0 auto;
+    width: 22%;
+  }
+
+  .col-xl-9 {
+    flex: 0 0 auto;
+    width: 78%;
+  }
+}
+
 .tooltip-inner {
   background-color: rgba(107 ,115 ,136);
   }
