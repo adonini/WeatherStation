@@ -74,33 +74,37 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 summary_body = html.Div([
     "Telescope cannot be operated under certain weather conditions.",
     html.Br(),
-    "If a value exceeds the safety limit, it will be highlighted in red, while if it is close to reaching the safety limit, it will be displayed in orange.",
-    html.Br(),
-    "Below the actions that have to be taken in case these limits are exceeded during observations.",
-    html.Br(),
-    html.Br(),
-    html.Table([
-        html.Tr([
-            html.Th("Condition", style={"font-weight": "bold", "text-align": "center"}),
-            html.Th("Action", style={"font-weight": "bold", "text-align": "center"})],
-            style={"border-bottom": "1px solid black"}),
-        html.Tr([
-            html.Td("Wind 10' Avg above 50 km/h", style={"padding-right": "40px"}),
-            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-            style={"border-bottom": "1px solid black"}),
-        html.Tr([
-            html.Td("Wind gusts above 60 km/h", style={"padding-right": "40px"}),
-            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-            style={"border-bottom": "1px solid black"}),
-        html.Tr([
-            html.Td("Humidity above 90%", style={"padding-right": "40px"}),
-            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-            style={"border-bottom": "1px solid black"}),
-        html.Tr([
-            html.Td("Precipitation is detected", style={"padding-right": "40px"}),
-            html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-            style={"border-bottom": "1px solid black"})
-    ], style={"border-collapse": "collapse", "margin": "auto"}),
+    "If a value exceeds the safety limit, it will be highlighted in ",
+    html.Span("red", style={'color': 'red'}),
+    ", while if it is close to reaching the safety limit, it will be displayed in ",
+    html.Span("orange", style={'color': 'orange'}),
+    ".",
+    # html.Br(),
+    # "Below the actions that have to be taken in case these limits are exceeded during observations.",
+    # html.Br(),
+    # html.Br(),
+    # html.Table([
+    #     html.Tr([
+    #         html.Th("Condition", style={"font-weight": "bold", "text-align": "center"}),
+    #         html.Th("Action", style={"font-weight": "bold", "text-align": "center"})],
+    #         style={"border-bottom": "1px solid black"}),
+    #     html.Tr([
+    #         html.Td("Wind 10' Avg above 36 km/h", style={"padding-right": "40px"}),
+    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+    #         style={"border-bottom": "1px solid black"}),
+    #     html.Tr([
+    #         html.Td("Wind gusts above 60 km/h", style={"padding-right": "40px"}),
+    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+    #         style={"border-bottom": "1px solid black"}),
+    #     html.Tr([
+    #         html.Td("Humidity above 90%", style={"padding-right": "40px"}),
+    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+    #         style={"border-bottom": "1px solid black"}),
+    #     html.Tr([
+    #         html.Td("Precipitation is detected", style={"padding-right": "40px"}),
+    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
+    #         style={"border-bottom": "1px solid black"})
+    # ], style={"border-collapse": "collapse", "margin": "auto"}),
     #html.Br(),
     #"In case the weather safety limits are exceeded BEFORE the start of observation, the telescope has to be kept in parking position until weather improves."
 ])
@@ -119,7 +123,7 @@ header_summary = dbc.Row([
         dbc.ModalBody(summary_body)],
         id="modal_summary",
         scrollable=True,
-        size="xl",
+        #size="xl",
         is_open=False,
     ),
     dbc.Col(
