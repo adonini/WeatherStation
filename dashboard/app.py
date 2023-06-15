@@ -1084,9 +1084,9 @@ def update_live_values(n_intervals, n=100):
                 live_values[0] = create_list_group_item_alert("Humidity", hum, ' %', badge_color='warning', row_color='warning')
 
         if w10_speed != 'n/a':
-            if w10_speed >= 50:
+            if w10_speed >= 36:
                 live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h')
-            elif 40 <= w10_speed < 50:
+            elif 30 <= w10_speed < 36:
                 live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check gusts speed and change the background color accordingly
@@ -1346,7 +1346,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     # Wind 10' trace
     #if latest_w10data is not None:
     w10_name = "Wind 10' Avg"
-    if latest_w10data >= 50:
+    if latest_w10data >= 36:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
     fig.add_trace(go.Scatter(x=timestamps, y=w10_speed,
                              name=w10_name,
@@ -1357,7 +1357,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              )
                   )
     # Change wind 10' graph color if above limit
-    if latest_w10data >= 50:
+    if latest_w10data >= 36:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
 
     # Trend trace
