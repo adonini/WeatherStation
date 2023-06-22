@@ -46,9 +46,14 @@ logger.addHandler(file_handler)
 #---------------------------------------------------------------------------#
 # Connect to MongoDB
 #---------------------------------------------------------------------------#
-client = MongoClient("mongodb://127.0.0.1:27010")
-mydb = client["WS"]
-collection = mydb["Readings"]
+try:
+    client = MongoClient("mongodb://127.0.0.1:27010")
+    # WHAT IF CAN NOT CONNECT TO MONGO?????
+    mydb = client["WS"]
+    collection = mydb["Readings"]
+except Exception:
+    logger.exception("Failed to connect to MongoDB.")
+
 
 server = flask.Flask(__name__)
 
