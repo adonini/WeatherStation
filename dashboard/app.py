@@ -85,7 +85,7 @@ summary_body = html.Div([
     html.I(className=("bi bi-x-octagon"), style={'color': 'red'}),
     ".",
     html.Br(),
-    "If instead the value is close to reaching the safety limit, it will be displayed in ",
+    "If instead the value is close to reach the safety limit, it will be displayed in ",
     html.Span("orange", style={'color': 'orange'}),
     " and with the symbol ",
     html.I(className=("bi bi-exclamation-triangle"), style={'color': 'orange'}),
