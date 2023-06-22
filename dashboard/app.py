@@ -82,11 +82,13 @@ summary_body = html.Div([
     "If a value exceeds the safety limit, it will be highlighted in ",
     html.Span("red", style={'color': 'red'}),
     " and tagged with the symbol ",
-    html.I(className=("bi bi-x-octagon-fill"), style={'color': 'red'}),
-    ", while if it is close to reaching the safety limit, it will be displayed in ",
+    html.I(className=("bi bi-x-octagon"), style={'color': 'red'}),
+    ".",
+    html.Br(),
+    "If instead the value is close to reaching the safety limit, it will be displayed in ",
     html.Span("orange", style={'color': 'orange'}),
     " and with the symbol ",
-    html.I(className=("bi bi-exclamation-triangle-fill"), style={'color': 'orange'}),
+    html.I(className=("bi bi-exclamation-triangle"), style={'color': 'orange'}),
     ".",
     # html.Br(),
     # "Below the actions that have to be taken in case these limits are exceeded during observations.",
@@ -156,18 +158,18 @@ card_summary = dbc.Card([
 card_info = dbc.Card([
     dbc.CardHeader("Info", className="card text-white bg-primary w-100 fs-5"),
     dbc.CardBody([
-        html.Div([html.I(className="fas fa-clock"), " Time ", html.Span(id="current-time", style={'marginLeft': '10px'})]),
-        html.Div([html.I(className="fas fa-calendar-day"), " Date ", html.Span(id="current-date", style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-clock me-2"), " Time ", html.Span(id="current-time", style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-calendar3 me-2"), " Date ", html.Span(id="current-date", style={'marginLeft': '10px'})]),
         html.Hr(),
-        html.Div([html.I(className="bi bi-sunrise-fill me-2"), " Sunrise ", html.Span(id='sunrise-time', style={'marginLeft': '10px'})]),
-        html.Div([html.I(className="bi bi-sunset-fill me-2"), " Sunset ", html.Span(id='sunset-time', style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-sunrise me-2"), " Sunrise ", html.Span(id='sunrise-time', style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-sunset me-2"), " Sunset ", html.Span(id='sunset-time', style={'marginLeft': '10px'})]),
         html.Hr(),
         html.Div([
             #html.P([html.I(className='fas fa-eye'), ' Visible ', html.Span(id='moon-visibility')]),
             #html.P([html.I(className='fas fa-moon mr-2'), ' Phase ', html.Span(id='moon-phase')]),
-            html.P([html.I(className='fas fa-moon mr-2'), ' Illumination ', html.Span(id='moon-illumination', style={'marginLeft': '10px'})]),
-            html.P([html.I(className='fas fa-arrow-up'), ' Rise ', html.Span(id='moon-rise', style={'marginLeft': '10px'})]),
-            html.P([html.I(className='fas fa-arrow-down'), ' Set ', html.Span(id='moon-set', style={'marginLeft': '10px'})])
+            html.P([html.I(className='bi bi-moon-stars me-2'), ' Illumination ', html.Span(id='moon-illumination', style={'marginLeft': '10px'})]),
+            html.P([html.I(className='bi bi-arrow-up'), ' Rise ', html.Span(id='moon-rise', style={'marginLeft': '10px'})]),
+            html.P([html.I(className='bi bi-arrow-down'), ' Set ', html.Span(id='moon-set', style={'marginLeft': '10px'})])
         ]),
     ]),
 ])
