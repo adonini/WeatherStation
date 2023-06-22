@@ -76,8 +76,12 @@ summary_body = html.Div([
     html.Br(),
     "If a value exceeds the safety limit, it will be highlighted in ",
     html.Span("red", style={'color': 'red'}),
+    " and tagged with the symbol ",
+    html.I(className=("bi bi-x-octagon-fill"), style={'color': 'red'}),
     ", while if it is close to reaching the safety limit, it will be displayed in ",
     html.Span("orange", style={'color': 'orange'}),
+    " and with the symbol ",
+    html.I(className=("bi bi-exclamation-triangle-fill"), style={'color': 'orange'}),
     ".",
     # html.Br(),
     # "Below the actions that have to be taken in case these limits are exceeded during observations.",
@@ -708,7 +712,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
         line = dbc.ListGroupItem([
             dbc.Row([
                 dbc.Col([
-                    html.I(className="bi bi-exclamation-triangle-fill me-2", style={"display": "inline-block"}),
+                    html.I(className=("bi bi-exclamation-triangle-fill me-3" if badge_color == 'warning' else "bi bi-x-octagon-fill me-3"), style={"display": "inline-block"}),
                     html.A(title, id=f"open_{title}", href="#", n_clicks=0, style={"display": "inline-block", "cursor": "pointer", "color": "var(--primary)", "textDecoration": "none"}),
                 ], className="d-flex align-items-center justify-content-center"),
                 dbc.Modal([
@@ -1159,6 +1163,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     fig.add_trace(go.Scatter(x=timestamps, y=dews,
                              name='Dew Point',
                              line_color='firebrick',
+                             line_dash='dot',
                              hovertemplate=('%{x}<br>' + 'Dew Point: %{y:.2f} °C <br><extra></extra> '),
                              connectgaps=False,
                              )
