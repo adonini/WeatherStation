@@ -1096,9 +1096,9 @@ def update_live_values(n_intervals, n=100):
 
         if w10_speed != 'n/a':
             if w10_speed >= 36:
-                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h')
+                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w10_speed, ' km/h')
             elif 30 <= w10_speed < 36:
-                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w_speed, ' km/h', badge_color='warning', row_color='warning')
+                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w10_speed, ' km/h', badge_color='warning', row_color='warning')
 
         # Check gusts speed and change the background color accordingly
         if g_speed != 'n/a':
