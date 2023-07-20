@@ -2,18 +2,18 @@ version: '3.5'
 services:
   mongo:
     hostname: "mongo-WS"  # custom host name to use for the service container
-    container_name: "mongodb-WS"  # specifies a custom container name
-    image: "mongo:4.2.1-bionic"  # image to start the container from. Same as TCU one.
+    container_name: "mongodb-WS" # specifies a custom container name
+    image: "mongo:4.2.1-bionic"  # image to start the container from. Same as TCU.
     restart: unless-stopped  # restarts a container irrespective of the exit code but will stop restarting when the service is stopped or removed
     ports:  # Exposes container ports: host IP, host port and container port
-      - '27010:27010'
+      - '127.0.0.1:27010:27017'
     volumes:  # mount host paths or named volumes that MUST be accessible by service containers
-      - /Users/alicedonini:/data/db
-    networks:
-      weatherstation:
-        aliases:
-          - WSdatabase
+      - /opt/lst-safetybroker/db/mongo/WS:/data/db
+    #networks:
+    #  weatherstation:
+    #    aliases:
+    #      - WSdatabase
 
-networks:
-  weatherstation:
-    name: weatherstation
+#networks:
+#  weatherstation:
+#    name: weatherstation
