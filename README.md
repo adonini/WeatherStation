@@ -12,11 +12,13 @@ A dash application `app.py` reads the weather data from MongoDB and displays the
 ## MongoDB
 
 To start the container: `docker-compose -f docker_compose_mongo.yaml up -d`
+
 To stop the container: `docker-compose -f docker_compose_mongo.yaml down`
 
 The option `-d` detach the docker-compose, so that the container is being running in the background.
 
-To list the running containers: `docker ps`
+To list the running containers: `docker ps`.
+
 To enter inside the Mongo container and run an interactive shell: `docker exec -it mongodb-WS bash`.
 Once in the bash terminal of the container use command `mongo` to access MongoDB.
 Run `show dbs` command to list all databases.
@@ -26,8 +28,8 @@ To access container logs use `docker logs mongodb-WS` command.
 
 ## Scripts
 
-To allow the pull/push of the weather data from the WS to the MOngoDB, launch from the main directory the script `runWS.py` with the command `nohup python -u runWS.py &`.
-To launch the dashboard, for the moment first activate the conda env conda activate modbus and then from the main directory use the command `nohup python -u dashboard/app.py &`.
+To allow the pull/push of the weather data from the WS to the MongoDB, launch from the main directory the script `runWS.py` with the command `nohup python -u runWS.py &`.
+To launch the dashboard, for the moment first activate the conda env `conda activate modbus` and then from the main directory use the command `nohup python -u dashboard/app.py &`.
 
 To see if the scripts are running use: `ps aux | grep app.py` or `ps aux | grep runWS.py`.
 
