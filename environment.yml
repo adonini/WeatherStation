@@ -1,0 +1,26 @@
+name: ws
+channels:
+  - defaults
+dependencies:
+  - pip
+  - pip:
+    - astroplan
+    - astropy
+    - asyncua
+    - asyncio
+    - beautifulsoup4
+    - bs4
+    - dash
+    - Flask
+    - matplotlib
+    - numpy
+    - opcua
+    - pandas
+    - plotly
+    - pymongo
+    - PyYAML
+    - waitress
+    - suntime
+    - requests
+    - pymodbus
+    - dash_bootstrap_components
