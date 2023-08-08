@@ -1,11 +1,24 @@
 #!/bin/bash
 
-# Activate Conda environment for WS
-source /home/alice.donini/.bashrc
-conda activate modbus
+# Initialize Conda and Activate Conda environment for WS
+CONDA_INIT_SCRIPT="/opt/lst-safetybroker/conda/conda_init.sh"
+source "$CONDA_INIT_SCRIPT"
+conda activate ws
 
 # Launch script in the background with nohup,  unbuffering the output
-sudo -u lst-safetybroker nohup python -u runWS.py &
+echo "Lunching OPC UA client..."
+#sudo -u lst-safetybroker
+nohup python -u /opt/lst-safetybroker/bin/runWS.py &
 
-# Print a message indicating the script has been started
-echo "runWS.py script has been launched in the background."
+# Wait a few seconds for the process to start
+sleep 2
+
+# Check if the process is running
+p=`ps aux | grep runWS.py | grep python`
+if p==1; then
+    # Process is running
+    echo "The WS client is running"
+else
+    # Process is not running
+    echo "Error: The process is not running. An error occurred."
+fi
