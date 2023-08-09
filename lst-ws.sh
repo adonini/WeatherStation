@@ -116,7 +116,7 @@ case "$1" in
         echo "Starting the WS client"
         source /opt/lst-safetybroker/bin/start_WS.sh
         sleep 2
-        p=`ps aux | grep runWS.py | grep python`
+        p=`ps aux | grep runWS.py | grep python | wc -l`
         if [ $p -eq 1 ]; then
             echo "WS client is running. All good!"
         else
@@ -131,7 +131,7 @@ case "$1" in
         exit
         ;;
     status_WS_client)
-        p=`ps aux | grep runWS.py | grep python`
+        p=`ps aux | grep runWS.py | grep python | wc -l`
         if [ $p -eq 1 ]; then
             echo "WS client is running. All good!"
         elif [ $p -eq 0 ]; then
@@ -145,7 +145,7 @@ case "$1" in
     #############################    WS DASHBOARD    ##############################
     start_dashboard)
         echo "Starting the WS dashboard"
-        source /opt/lst-safetybroker/bin/start_WSdasboard.sh
+        source /opt/lst-safetybroker/bin/start_WSdashboard.sh
         sleep 1
         exit
         ;;
@@ -156,7 +156,7 @@ case "$1" in
         exit
         ;;
     status_dashboard)
-        p=`ps aux | grep app.py | grep python`
+        p=`ps aux | grep app.py | grep python | wc -l`
         if [ $p -eq 1 ]; then
             echo "WS dashboard is running. All good!"
         elif [ $p -eq 0 ]; then
