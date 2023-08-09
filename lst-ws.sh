@@ -113,21 +113,16 @@ case "$1" in
 
     #############################    WS DATA SCRIPT    ##############################
     start_WS_client)
-        echo "Starting the WS client"
+        #echo "Starting the WS client"
         source /opt/lst-safetybroker/bin/start_WS.sh
-        sleep 2
-        p=`ps aux | grep runWS.py | grep python | wc -l`
-        if [ $p -eq 1 ]; then
-            echo "WS client is running. All good!"
-        else
-            echo "Something went wrong. The WS client is NOT running."
-        fi
+        sleep 1
         exit
         ;;
     stop_WS_client)
-        echo "Killing the WS client"
+        echo "Killing the WS client..."
         ps aux | grep runWS.py | grep python | awk '{system("kill " $2)}'
-        sleep 2
+        sleep 1
+        echo "Done!"
         exit
         ;;
     status_WS_client)
@@ -144,15 +139,16 @@ case "$1" in
 
     #############################    WS DASHBOARD    ##############################
     start_dashboard)
-        echo "Starting the WS dashboard"
+        #echo "Starting the WS dashboard"
         source /opt/lst-safetybroker/bin/start_WSdashboard.sh
         sleep 1
         exit
         ;;
     stop_dashboard)
-        echo "Killing the WS dashboard"
+        echo "Killing the WS dashboard..."
         ps aux | grep app.py | grep python | awk '{system("kill " $2)}'
         sleep 1
+        echo "Done!"
         exit
         ;;
     status_dashboard)
