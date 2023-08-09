@@ -37,9 +37,9 @@ case "$1" in
         echo
         echo "#############################    DASHBOARD ACTIONS    #############################"
         echo
-        echo "   start_WS_app   -- Launches the LST-1 weather station dashboard"
-        echo "   stop_WS_app    -- Stops the LST-1 weather station dashboard"
-        echo "   status_WS_app  -- Reports the LST-1 weather station dashboard"
+        echo "   start_dashboard   -- Launches the LST-1 weather station dashboard"
+        echo "   stop_dashboard    -- Stops the LST-1 weather station dashboard"
+        echo "   status_dashboard  -- Reports the LST-1 weather station dashboard"
         echo
         echo "##################################################################################"
         exit
@@ -112,7 +112,7 @@ case "$1" in
         # ;;
 
     #############################    WS DATA SCRIPT    ##############################
-    start_client)
+    start_WS_client)
         echo "Starting the WS client"
         source /opt/lst-safetybroker/bin/start_WS.sh
         sleep 2
@@ -124,13 +124,13 @@ case "$1" in
         fi
         exit
         ;;
-    stop_client)
+    stop_WS_client)
         echo "Killing the WS client"
         ps aux | grep runWS.py | grep python | awk '{system("kill " $2)}'
         sleep 2
         exit
         ;;
-    status_client)
+    status_WS_client)
         p=`ps aux | grep runWS.py | grep python`
         if [ $p -eq 1 ]; then
             echo "WS client is running. All good!"
