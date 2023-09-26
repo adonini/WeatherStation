@@ -66,7 +66,7 @@ class MongoDB:
             #col = my_db[dbCollection]
             logger.info('### Connected to MongoDB')
         except Exception as err:
-            print("Could not connect to MongoDB: %s" % err)
+            #print("Could not connect to MongoDB: %s" % err)
             logger.error(f'Could not connect to MongoDB: {err}')
 
     def add_parameter(self, parameter, description, units):
@@ -124,3 +124,14 @@ class MongoDB:
             self.measurements_col.insert_one(data)
         except Exception:
             logger.error(f'## Failed to add entry to the DB: {data}')
+
+    def close_connection(self):
+        """
+        Close connection to the mongoDB sever local network
+        """
+        try:
+            self.client.close()
+            logger.info('### Connection to MongoDB closed.')
+        except Exception as err:
+            #print("Could not discconnect from MongoDB: %s" % err)
+            logger.error(f'Could not disconnect from MongoDB: {err}')

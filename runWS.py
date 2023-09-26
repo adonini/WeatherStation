@@ -37,6 +37,7 @@ async def main():
             #start_mongo = time.perf_counter()
             mongo = MongoDB()
             mongo.insert(data)
+            mongo.close_connection()
             #end_mongo = time.perf_counter()
             #print(f"Time taken for MongoDB connect and insert: {end_mongo - start_mongo:.4f} seconds")
             #logger.debug(f"Time taken for MongoDB conect and insert: {end_mongo - start_mongo:.4f} seconds")
