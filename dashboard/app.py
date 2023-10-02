@@ -794,7 +794,10 @@ app.layout = html.Div([
     html.Hr(),
     dbc.Row([
         html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        html.Div(content, className="col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
+        dbc.Row(dbc.Col(
+            content,
+            width={"size": 12},  # Allow the content to take available space in the row
+        ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
         # dcc.Store inside the user's current browser session
         #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
         # add an automatic refresh every day of everything
