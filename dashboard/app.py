@@ -1384,7 +1384,9 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     #                         line_color="black"
     #                         )
     #              )
-
+    # Initialize empty lists for tick values and tick text
+    yaxis_tickvals = [0, 20, 36, 40, 60, 80, 100, 120, 140]
+    yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
                       uirevision=True,
                       #width=620,
@@ -1396,6 +1398,10 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                       template='plotly_white',
                       modebar_add=["hovercompare", "v1hovermode"],
                       legend=dict(x=1, y=0.9),
+                      yaxis_ticks="outside",
+                      yaxis_tickmode="array",
+                      yaxis_tickvals=yaxis_tickvals,
+                      yaxis_ticktext=yaxis_ticktext,
                       )
     fig.update_xaxes(showgrid=False)
 
