@@ -5,6 +5,7 @@ import json
 from asyncua import Client
 import asyncio
 
+
 logger = logging.getLogger('main.asyncua')
 #logger.setLevel(logging.DEBUG)
 
@@ -50,14 +51,13 @@ class OPCUAConnection():
     def __init__(self):
         self.listOfWSNode = []
         self.WSDPValues = {}
-        dps = Path("DPS.json").is_file()
-        if dps:
-            with open("DPS.json", mode="r") as dpsFile:
-                dpsDict = json.load(dpsFile)
-                self.dpsList = dpsDict["Elements"]
-                opcuaChar = dpsDict["OPCUA"]
-                dpsFile.close()
-                self.url = "opc.tcp://" + opcuaChar["Host"] + ":" + opcuaChar["Port"]
+        # dps = Path("DPS.json").is_file()
+        with open("DPS.json", mode="r") as dpsFile:
+            dpsDict = json.load(dpsFile)
+            self.dpsList = dpsDict["Elements"]
+            opcuaChar = dpsDict["OPCUA"]
+            dpsFile.close()
+            self.url = "opc.tcp://" + opcuaChar["Host"] + ":" + opcuaChar["Port"]
 
     async def connectANDread(self):
         #start_time = time.time()
@@ -108,6 +108,10 @@ class OPCUAConnection():
                     #logger.debug(f"Total elapsed time: {end_time - start_time} seconds")
                     print("Set of WS data: ", self.WSDPValues)
                     return self.WSDPValues
+        except KeyboardInterrupt:
+            # Handle Ctrl+C (KeyboardInterrupt)
+            logger.info("Received Ctrl+C. Exiting gracefully...")
+            client.disconnect()
         except Exception as e:
             logger.error(f"Can not connect to OPCUA. Error: {e}")
 
