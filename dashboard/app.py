@@ -501,8 +501,6 @@ def get_magic_values():
         response = requests.get(url, timeout=5)  # set a timeout of 5s to get a response
         soup = BeautifulSoup(response.content, "html.parser")
         # Find the table row that contains the values
-        #tng_dust_row = soup.find("a", {"href": "javascript:siteWindowdust()"}).parent.parent
-        #tng_dust_value = tng_dust_row.find_all("td")[1].text.strip()
         cloud_row = soup.find("a", {"href": "javascript:siteWindowpyro()"}).parent.parent
         cloud_value = cloud_row.find_all("td")[1].text.strip()
         tran9_row = soup.find("a", {"href": "javascript:siteWindowlidar()"}).parent.parent
@@ -510,13 +508,11 @@ def get_magic_values():
         return cloud_value, tran9_value
     except requests.exceptions.Timeout:
         logger.error('The request to the MAGIC website timed out.')
-        #tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
         return cloud_value, tran9_value
     except Exception:
         logger.warning('Unable to access MAGIC values!')
-        #tng_dust_value = 'n/a'
         cloud_value = 'n/a'
         tran9_value = 'n/a'
         return cloud_value, tran9_value
@@ -526,33 +522,24 @@ def get_tng_dust_value():
     try:
         # URL of the XML feed
         xml_url = "https://tngweb.tng.iac.es/api/meteo/weather/feed.xml"
-
         # Make a request with a timeout of 5 seconds
         response = requests.get(xml_url, timeout=5)
         xml_data = response.text
-
         # Parse the XML data
         root = ET.fromstring(xml_data)
-
         # Find the Dust element and extract its value
         namespace = {"tngw": "http://www.tng.iac.es/weather/current/rss/tngweather"}
         dust_element = root.find(".//tngw:dustTotal", namespace)
         dust_value = dust_element.text if dust_element is not None else 'n/a'
-
         # Round the Dust value to two decimal places
         if dust_value != 'n/a':
             dust_value = round(float(dust_value), 2)
-
         return dust_value
-
     except requests.exceptions.Timeout:
-        # Handle timeout error
         logger.error('The request to the TNG feed timed out.')
         dust_value = 'n/a'
         return dust_value
-
     except Exception:
-        # Handle general error
         logger.warning('Unable to access TNG values!')
         dust_value = 'n/a'
         return dust_value
@@ -607,7 +594,7 @@ body_mapping = {
         html.Br(),
         "Resolution: 1 W/m²"
     ]),
-    "Precipitation": html.Div([
+    "Rain": html.Div([
         "A Doppler radar module is used to detect precipitation and determine its intensity, quantity, and type. The radar module is mounted on top of the printed board in the device. The intensity of the last minute is extrapolated to one hour for the output.",
         html.Br(),
         "The precipitation intensity is always the moving average of the last minute.",
@@ -670,7 +657,7 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
     if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
-    if title in ["Humidity", "Wind 1' Avg", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Precipitation", "Pressure"]:
+    if title in ["Humidity", "Wind 1' Avg", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Rain", "Pressure"]:
         body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem(
             dbc.Row([
@@ -714,7 +701,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
         badge_color = 'secondary'
         row_color = 'secondary'
     # Create a list of titles that require a modal and check if the value exists in the list
-    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts", "Precipitation", "Precipitation Intensity"]:  # "Wind Speed",
+    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts", "Rain", "Rain Intensity"]:  # "Wind Speed",
         body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem([
             dbc.Row([
@@ -798,9 +785,6 @@ app.layout = html.Div([
             content,
             width={"size": 12},  # Allow the content to take available space in the row
         ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
-        # dcc.Store inside the user's current browser session
-        #dcc.Store(id='store-last-db-entry', data=[], storage_type='memory'),  # memory reset at every refresh
-        # add an automatic refresh every day of everything
         dcc.Interval(
             id='interval-day-change',
             interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds
@@ -1006,9 +990,7 @@ def update_sun(n_intervals):
 # Define a function to update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children')],
-              [Input('interval-livevalues', 'n_intervals'),
-               #dash.dependencies.Input('store-last-db-entry', 'data')
-               ]
+              [Input('interval-livevalues', 'n_intervals')]
               )
 def update_live_values(n_intervals, n=100):
     # Get the latest reading from the database
