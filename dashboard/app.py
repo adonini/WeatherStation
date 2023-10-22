@@ -781,8 +781,15 @@ app.layout = html.Div([
     html.Hr(),
     dbc.Row([
         html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        dbc.Row(dbc.Col(
-            content,
+        dbc.Row(dbc.Col([
+            html.Div(["Attention, adverse weather conditions:",
+                      html.Br(),
+                      "stop telescope operations!"
+                      ],
+                id="weather-alert",
+                style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
+                hidden=True),  # Initially hidden
+            content],
             width={"size": 12},  # Allow the content to take available space in the row
         ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
         dcc.Interval(
@@ -990,6 +997,7 @@ def update_sun(n_intervals):
 # Define a function to update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children')],
+              Output("weather-alert", "hidden"),
               [Input('interval-livevalues', 'n_intervals')]
               )
 def update_live_values(n_intervals, n=100):
@@ -1044,7 +1052,16 @@ def update_live_values(n_intervals, n=100):
             if (p_type == int(key_p)):
                 p_type = value_p
     p_int = get_value_or_nan(latest_data, 'Precipitation Intensity')
+    p_acc = get_value_or_nan(latest_data, 'Precipitation Amount')
     rad = get_value_or_nan(latest_data, 'Global Radiation')
+
+    hum_alert = hum >= 90
+    gust_alert = g_speed >= 60
+    wind_alert = w10_speed >= 36
+    precip_alert = p_int > 0
+
+    # Determine if there's an alert
+    is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert])
 
     # Format the live values as a list
     live_values = [
@@ -1054,15 +1071,17 @@ def update_live_values(n_intervals, n=100):
         create_list_group_item("Wind Gusts", g_speed, ' km/h', timestamps),
         create_list_group_item("Wind Direction", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
         create_list_group_item("Temperature", temp, ' °C', timestamps),
-        create_list_group_item("Dew Point Temperature", dew, ' °C', timestamps),
-        create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
         create_list_group_item("TNG Dust", tng_dust_value, ' µg/m3', timestamps),
-        create_list_group_item("Precipitation", p_type, '', timestamps),
-        create_list_group_item("Precipitation Intensity", p_int, ' mm/h', timestamps),
-        create_list_group_item("Global Radiation", rad, ' W/m2', timestamps),
-        create_list_group_item("Pressure", press, ' hPa', timestamps),
+        create_list_group_item("Rain", p_type, '', timestamps),
+        create_list_group_item("Rain Intensity", p_int, ' mm/h', timestamps),
+        create_list_group_item("Acc. Rain", p_acc, ' mm/d', timestamps),
         create_list_group_item("MAGIC Cloudiness", cloud_value, '', timestamps),
         create_list_group_item("MAGIC Trans@9km", tran9_value, '', timestamps),
+        create_list_group_item("Dew Point Temperature", dew, ' °C', timestamps),
+        create_list_group_item("Global Radiation", rad, ' W/m2', timestamps),
+        create_list_group_item("Pressure", press, ' hPa', timestamps),
+        create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
+
     ]
 
     # Check wind speed and change the background color accordingly
@@ -1095,12 +1114,14 @@ def update_live_values(n_intervals, n=100):
         # Check rain  and change the background color accordingly
         if p_type != 'n/a':
             if p_type != 'None':
-                live_values[9] = create_list_group_item_alert("Precipitation", p_type, '')
+                live_values[9] = create_list_group_item_alert("Rain", p_type, '')
         if p_int != 'n/a':
             if p_int > 0:
-                live_values[10] = create_list_group_item_alert("Precipitation Intensity", p_int, ' mm/h')
+                live_values[10] = create_list_group_item_alert("Rain Intensity", p_int, ' mm/h')
 
-    return live_values, dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap")
+    return [live_values,
+            dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap"),
+            not is_alert]
 
 
 # Define the callback function to update the temp graph
