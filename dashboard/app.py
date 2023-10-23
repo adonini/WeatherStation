@@ -1114,10 +1114,10 @@ def update_live_values(n_intervals, n=100):
         # Check rain  and change the background color accordingly
         if p_type != 'n/a':
             if p_type != 'None':
-                live_values[9] = create_list_group_item_alert("Rain", p_type, '')
+                live_values[7] = create_list_group_item_alert("Rain", p_type, '')
         if p_int != 'n/a':
             if p_int > 0:
-                live_values[10] = create_list_group_item_alert("Rain Intensity", p_int, ' mm/h')
+                live_values[8] = create_list_group_item_alert("Rain Intensity", p_int, ' mm/h')
 
     return [live_values,
             dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap"),
