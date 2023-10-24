@@ -15,7 +15,7 @@ from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
-from waitress import serve
+#from waitress import serve
 import uuid
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              combine_datetime, get_magic_values,
@@ -37,8 +37,8 @@ logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 12:00 UTC
 utc_time = time(12, 0, 0)
-file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/dashboard/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
-#file_handler = TimedRotatingFileHandler('./logs_dash/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+#file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/dashboard/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+file_handler = TimedRotatingFileHandler('/Users/alicedonini/Documents/LST/logs/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 # Create formatter and add it to handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
@@ -835,7 +835,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
             .fillna(0)
             .assign(calm=lambda df: calm_count / df.shape[0])
             .sort_index(axis=1)
-            .applymap(lambda x: x / total_count * 100)
+            .map(lambda x: x / total_count * 100)
             )
     #print(rose)
     # Create the wind rose plot
@@ -976,5 +976,5 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
 
 # Run the app
 if __name__ == '__main__':
-    #app.run_server(debug=True) # development server
-    serve(app.server, host='0.0.0.0', port=5010, threads=100, _quiet=True)
+    app.run_server(debug=True)  # development server
+    #serve(app.server, host='0.0.0.0', port=5010, threads=100, _quiet=True)
