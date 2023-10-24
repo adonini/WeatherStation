@@ -1,5 +1,4 @@
 import matplotlib
-import requests
 import numpy as np
 import pandas as pd
 from pandas import json_normalize
@@ -9,15 +8,11 @@ from logging.handlers import TimedRotatingFileHandler
 import dash
 from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
-# from dash.exceptions import PreventUpdate
-# import json
 import pymongo
 from pymongo import MongoClient
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, time
 from suntime import Sun, SunTimeException
-from bs4 import BeautifulSoup
-# from sklearn.linear_model import LinearRegression
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
@@ -33,6 +28,8 @@ from utils_functions import (make_card_grid,
                              get_value_or_nan)
 from utils_modal import body_mapping, summary_body, info_body
 from configurations import (config, time_options, location_lst,
+                            content_style, sidebar_style,
+                            spd_colors_speed, precipitationtype_dict)
 
 matplotlib.use('Agg')
 
@@ -40,7 +37,7 @@ matplotlib.use('Agg')
 # Initialize the main logger
 #---------------------------------------------------------------------------#
 # Create a custom logger
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 12:00 UTC
 utc_time = time(12, 0, 0)
@@ -64,18 +61,10 @@ except Exception:
     logger.exception("Failed to connect to MongoDB.")
 
 
-server = flask.Flask(__name__)
-
-#---------------------------------------------------------------------------#
-# Define stuff
-#---------------------------------------------------------------------------#
-FONT_AWESOME = "https://use.fontawesome.com/releases/v5.10.2/css/all.css"
-# Set location for Roque de los Muchachos
-location_lat = 28.7666636
-location_long = -17.8833298
-
 # Instantiate Dash and Exposing the Flask Server
 # meta_tags arguments allow controlling the size of the app component through different devices size
+FONT_AWESOME = "https://use.fontawesome.com/releases/v5.10.2/css/all.css"
+server = flask.Flask(__name__)
 app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=True, title='LST-1 Weather Station',
                 external_stylesheets=[dbc.themes.SANDSTONE, FONT_AWESOME, dbc.icons.BOOTSTRAP, dbc.icons.FONT_AWESOME],
                 meta_tags=[{'name': 'viewport',
@@ -141,13 +130,6 @@ card_info = dbc.Card([
 ######################
 # Sidebar definition
 #####################
-SIDEBAR_STYLE = {
-    "text-align": "center",
-    "padding": "2rem 1rem",
-    "background-color": "#596568e3",
-    "z-index": "5",
-}
-
 sidebar = html.Div([
     dbc.Nav(
         [html.Div(card_summary),
@@ -157,11 +139,12 @@ sidebar = html.Div([
         vertical=True,
     )],
     className="sticky-top overflow-scroll vh-100",
-    style=SIDEBAR_STYLE,
+    style=sidebar_style,
 )
 
+
 ######################
-# # Card components
+#   Card components
 ######################
 def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     # Header
@@ -257,21 +240,10 @@ cards = [
 ######################
 # # Define content
 ######################
-# padding for the page content
-CONTENT_STYLE = {
-    #"margin-left": "2%",
-    #"margin-right": "-2 rem",
-    #"padding": "2rem 1rem",
-    "min-width": "600px",
-    #"overflow": "scroll",
-    #"flex-grow": "1",
-    "z-index": "5",
-}
-
 content = html.Div(children=[
     html.Div(dbc.Col(make_card_grid(cards))),
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
-], className="p-2", style=CONTENT_STYLE)
+], className="p-2", style=content_style)
 
 
 ##################
@@ -284,20 +256,6 @@ spd_labels = speed_labels(spd_bins, units='km/h')
 dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)
 # assign midpoint of each bin
 dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
-# Mapping color for wind speed
-spd_colors_speed = ["#d8d8d8",
-                    "#b2f2ff",
-                    "#33ddff",
-                    "#00aaff",
-                    "#0055ff",
-                    "#0000ff",
-                    "#aa00ff",
-                    "#ff00ff",
-                    "#cc0000",
-                    "#ff6a00",
-                    "#ffd500",
-                    "#000000"
-                    ]
 
 
 ##############
@@ -580,8 +538,7 @@ def update_date_time(n_intervals):
     [Input('interval-day-change', 'n_intervals')]
 )
 def update_moon(n_intervals):
-    elevation = 2200 * u.m
-    location = EarthLocation(lat=location_lat * u.deg, lon=location_long * u.deg, height=elevation)
+    location = EarthLocation(lat=location_lst[0] * u.deg, lon=location_lst[1] * u.deg, height=location_lst[2] * u.m)
     # Get the current time in UTC
     now = datetime.utcnow()
     obs = Observer(location=location, timezone="UTC")
@@ -613,7 +570,7 @@ def update_moon(n_intervals):
 def update_sun(n_intervals):
     try:
         # Create a Sun object
-        sun = Sun(location_lat, location_long)
+        sun = Sun(location_lst[0], location_lst[1])
         # Get today's sunrise and sunset in UTC
         today_sr = sun.get_sunrise_time()
         today_ss = sun.get_sunset_time()
