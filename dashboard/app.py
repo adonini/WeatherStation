@@ -31,6 +31,8 @@ from utils_functions import (make_card_grid,
                              get_tng_dust_value,
                              toggle_modal,
                              get_value_or_nan)
+from utils_modal import body_mapping, summary_body, info_body
+from configurations import (config, time_options, location_lst,
 
 matplotlib.use('Agg')
 
@@ -83,51 +85,6 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 ###################
 #  Sidebar cards
 ##################
-summary_body = html.Div([
-    "Telescope cannot be operated under certain weather conditions.",
-    html.Br(),
-    "If a value exceeds the safety limit, it will be highlighted in ",
-    html.Span("red", style={'color': 'red'}),
-    " and tagged with the symbol ",
-    html.I(className=("bi bi-x-octagon"), style={'color': 'red'}),
-    ".",
-    html.Br(),
-    "If instead the value is close to reach the safety limit, it will be displayed in ",
-    html.Span("orange", style={'color': 'orange'}),
-    " and with the symbol ",
-    html.I(className=("bi bi-exclamation-triangle"), style={'color': 'orange'}),
-    ".",
-    # html.Br(),
-    # "Below the actions that have to be taken in case these limits are exceeded during observations.",
-    # html.Br(),
-    # html.Br(),
-    # html.Table([
-    #     html.Tr([
-    #         html.Th("Condition", style={"font-weight": "bold", "text-align": "center"}),
-    #         html.Th("Action", style={"font-weight": "bold", "text-align": "center"})],
-    #         style={"border-bottom": "1px solid black"}),
-    #     html.Tr([
-    #         html.Td("Wind 10' Avg above 36 km/h", style={"padding-right": "40px"}),
-    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-    #         style={"border-bottom": "1px solid black"}),
-    #     html.Tr([
-    #         html.Td("Wind gusts above 60 km/h", style={"padding-right": "40px"}),
-    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-    #         style={"border-bottom": "1px solid black"}),
-    #     html.Tr([
-    #         html.Td("Humidity above 90%", style={"padding-right": "40px"}),
-    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-    #         style={"border-bottom": "1px solid black"}),
-    #     html.Tr([
-    #         html.Td("Precipitation is detected", style={"padding-right": "40px"}),
-    #         html.Td([html.Div("- Telescope to park-out"), html.Div("- Close camera shutter")])],
-    #         style={"border-bottom": "1px solid black"})
-    # ], style={"border-collapse": "collapse", "margin": "auto"}),
-    #html.Br(),
-    #"In case the weather safety limits are exceeded BEFORE the start of observation, the telescope has to be kept in parking position until weather improves."
-])
-
-
 header_summary = dbc.Row([
     dbc.Col(
         html.I(className="bi bi-info-circle", id="summary-info-icon", n_clicks=0, style={"font-size": "24px", "cursor": "pointer"}),
@@ -206,40 +163,6 @@ sidebar = html.Div([
 ######################
 # # Card components
 ######################
-# plots configuration
-config = {
-    'displaylogo': False,  # remove plotly logo
-    'modeBarButtonsToRemove': ['resetScale', 'lasso2d', 'select2d'],
-    'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
-}
-
-time_options = [{'label': '1 Hour', 'value': 1},
-                {'label': '3 Hours', 'value': 3},
-                {'label': '6 Hours', 'value': 6},
-                {'label': '12 Hours', 'value': 12},
-                {'label': '24 Hours', 'value': 24},
-                {'label': '48 Hours', 'value': 48}]
-
-info_body = html.Div([
-    "A Wind Rose displays the distribution of wind speed and wind direction at a given location. ",
-    html.Br(),
-    "The rays point to the direction from which the wind is coming from, and their length shows the frequency of that direction.",
-    html.Br(),
-    "Each concentric circle represents a different frequency, starting from zero at the center to increasing frequencies at the outer circles.",
-    html.Br(),
-    "The colour depends on the wind speed.",
-    html.Br(),
-    """One of the scales to estimate wind speed is the Beaufort scale,
-    an empirical scale that relates wind speed to observed conditions at sea or on land.""",
-    html.Br(),
-    """Note that the wind speeds in this scale are mean speeds, averaged over 10 minutes by convention, and do not capture the speed of wind gusts.""",
-    html.Br(),
-    html.Img(src=app.get_asset_url('Beaufortscale.jpeg'), style={"max-width": "100%", "height": "auto"}),
-    html.Br(),
-    html.Div(["Image from ", html.A("Howtoons", href="https://howtoons.com/The-Beaufort-Scale", className="text-primary", style={"text-decoration": "none"}, target="_blank")], style={"text-align": "center"}),
-])
-
-
 def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     # Header
     if value_name == "Wind Rose":
