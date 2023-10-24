@@ -6,7 +6,7 @@ services:
     image: "mongo:4.2.1-bionic"  # image to start the container from. Same as TCU.
     restart: unless-stopped  # restarts a container irrespective of the exit code but will stop restarting when the service is stopped or removed
     ports:  # Exposes container ports: host IP, host port and container port
-      - '127.0.0.1:27010:27017'
+      - '27010:27017'
     volumes:  # mount host paths or named volumes that MUST be accessible by service containers
       - /opt/lst-safetybroker/db/mongo/WS:/data/db
     #networks:
