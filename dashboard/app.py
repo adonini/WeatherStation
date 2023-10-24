@@ -23,7 +23,14 @@ import astropy.units as u
 from astroplan import Observer
 from waitress import serve
 import uuid
-import xml.etree.ElementTree as ET
+from utils_functions import (make_card_grid,
+                             speed_labels,
+                             convert_meteorological_deg2cardinal_dir,
+                             combine_datetime,
+                             get_magic_values,
+                             get_tng_dust_value,
+                             toggle_modal,
+                             get_value_or_nan)
 
 matplotlib.use('Agg')
 
@@ -324,21 +331,6 @@ cards = [
 ]
 
 
-def make_card_grid(cards_per_row=2):
-    row = []
-    #print(row)
-    grid = []
-    for card in cards:
-        if len(row) < cards_per_row:
-            #print(row)
-            row.append(card)
-        if len(row) == cards_per_row:
-            grid.append(dbc.CardGroup(row, className="mb-4"))
-            row = []
-    grid.append(dbc.CardGroup(row))
-    return grid
-
-
 ######################
 # # Define content
 ######################
@@ -354,7 +346,7 @@ CONTENT_STYLE = {
 }
 
 content = html.Div(children=[
-    html.Div(dbc.Col(make_card_grid())),
+    html.Div(dbc.Col(make_card_grid(cards))),
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
 ], className="p-2", style=CONTENT_STYLE)
 
@@ -362,21 +354,7 @@ content = html.Div(children=[
 ##################
 # Wind rose stuff
 ##################
-# function that will give us nice labels for a wind speed range
-def speed_labels(bins, units):
-    labels = []
-    for left, right in zip(bins[:-1], bins[1:]):
-        if left == bins[0]:
-            labels.append('calm')
-        elif np.isinf(right):
-            labels.append(f'>{int(left+0.01)} {units}')
-        else:
-            labels.append(f'{int(left+0.01)} - {int(right-0.99)} {units}')
-
-    return list(labels)
-
-
-# Define our bins and labels for speed and wind
+# Define bins and labels for speed and wind
 spd_bins = [-1, 0.99, 5.99, 11.99, 19.99, 28.99, 38.99, 49.99, 61.99, 74.99, 88.99, 102.99, np.inf]
 spd_labels = speed_labels(spd_bins, units='km/h')
 # represent boundaries of wind direction bins. Each bin spans 22.5 degrees.
@@ -400,259 +378,8 @@ spd_colors_speed = ["#d8d8d8",
 
 
 ##############
-# Random stuff
+# List group in sidebar
 ##############
-# decode precipitation type
-precipitationtype_dict = {0: 'None',
-                          40: 'Precipitation present',
-                          51: 'Light drizzle',
-                          52: 'Moderate drizzle',
-                          53: 'Heavy drizzle',
-                          61: 'Light rain',
-                          62: 'Moderate rain',
-                          63: 'Heavy rain',
-                          67: 'Light rain with snow',
-                          68: 'Moderate rain with snow',
-                          70: 'Snowfall',
-                          71: 'Light snow',
-                          72: 'Moderate snow',
-                          73: 'Heavy snow',
-                          74: 'Ice pallets',
-                          89: 'Heavy hail',
-                          }
-
-
-def convert_meteorological_deg2cardinal_dir(deg_measurement):
-    """
-    from
-    http://snowfence.umn.edu/Components/winddirectionanddegrees.htm
-    :param deg_measurement:
-    :return:
-    """
-    if deg_measurement > 348.75 or deg_measurement <= 11.25:
-        return "N"
-    elif deg_measurement > 11.25 and deg_measurement <= 33.25:
-        return "NNE"
-    elif deg_measurement > 33.75 and deg_measurement <= 56.25:
-        return "NE"
-    elif deg_measurement > 56.25 and deg_measurement <= 78.75:
-        return "ENE"
-    elif deg_measurement > 78.75 and deg_measurement <= 101.25:
-        return "E"
-    elif deg_measurement > 101.25 and deg_measurement <= 123.75:
-        return "ESE"
-    elif deg_measurement > 123.75 and deg_measurement <= 146.25:
-        return "SE"
-    elif deg_measurement > 146.25 and deg_measurement <= 168.75:
-        return "SSE"
-    elif deg_measurement > 168.75 and deg_measurement <= 191.25:
-        return "S"
-    elif deg_measurement > 191.25 and deg_measurement <= 213.75:
-        return "SSW"
-    elif deg_measurement > 213.75 and deg_measurement <= 236.25:
-        return "SW"
-    elif deg_measurement > 236.25 and deg_measurement <= 258.75:
-        return "WSW"
-    elif deg_measurement > 258.75 and deg_measurement <= 281.25:
-        return "W"
-    elif deg_measurement > 281.25 and deg_measurement <= 303.75:
-        return "WNW"
-    elif deg_measurement > 303.75 and deg_measurement <= 326.25:
-        return "NW"
-    elif deg_measurement > 326.25 and deg_measurement <= 348.75:
-        return "NNW"
-    elif deg_measurement == 'n/a':
-        return ''
-
-
-def combine_datetime(date_time_list):
-    """
-    Combines a list of dates and times into datetime objects.
-    Args:
-        date_time_list (list): a list of tuples, where each tuple contains a date string in the format YYYYMMDD
-        and a time string in the format HHMMSS
-    Returns:
-        list: A list of datetime objects.
-    """
-    timestamps = []
-    for date_str, time_str in date_time_list:
-        try:
-            dt_str = date_str + ' ' + time_str
-            dt = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-            timestamps.append(dt)
-        except Exception as e:
-            print(f'Error in entry {date_str}, {time_str}: {e}')
-            logger.error(f'Error in timestamp entry {date_str}, {time_str}: {e}')
-            timestamps.append(None)
-    return timestamps
-
-
-def get_magic_values():
-    """Retrieve TNG dust value, cloud value, and TRAN9 value from the MAGIC astronomical observatory website.
-    Returns:
-        tuple: A tuple containing three strings:
-            - tng_dust_value: The TNG dust value.
-            - cloud_value: The cloud value.
-            - tran9_value: The TRAN9 value.
-    If there is a problem accessing the website or if the request times out, the function returns 'n/a' for all values.
-    """
-    url = "http://www.magic.iac.es/site/weather/index.html"
-    try:
-        response = requests.get(url, timeout=5)  # set a timeout of 5s to get a response
-        soup = BeautifulSoup(response.content, "html.parser")
-        # Find the table row that contains the values
-        cloud_row = soup.find("a", {"href": "javascript:siteWindowpyro()"}).parent.parent
-        cloud_value = cloud_row.find_all("td")[1].text.strip()
-        tran9_row = soup.find("a", {"href": "javascript:siteWindowlidar()"}).parent.parent
-        tran9_value = tran9_row.find_all("td")[1].text.strip()
-        return cloud_value, tran9_value
-    except requests.exceptions.Timeout:
-        logger.error('The request to the MAGIC website timed out.')
-        cloud_value = 'n/a'
-        tran9_value = 'n/a'
-        return cloud_value, tran9_value
-    except Exception:
-        logger.warning('Unable to access MAGIC values!')
-        cloud_value = 'n/a'
-        tran9_value = 'n/a'
-        return cloud_value, tran9_value
-
-
-def get_tng_dust_value():
-    try:
-        # URL of the XML feed
-        xml_url = "https://tngweb.tng.iac.es/api/meteo/weather/feed.xml"
-        # Make a request with a timeout of 5 seconds
-        response = requests.get(xml_url, timeout=5)
-        xml_data = response.text
-        # Parse the XML data
-        root = ET.fromstring(xml_data)
-        # Find the Dust element and extract its value
-        namespace = {"tngw": "http://www.tng.iac.es/weather/current/rss/tngweather"}
-        dust_element = root.find(".//tngw:dustTotal", namespace)
-        dust_value = dust_element.text if dust_element is not None else 'n/a'
-        # Round the Dust value to two decimal places
-        if dust_value != 'n/a':
-            dust_value = round(float(dust_value), 2)
-        return dust_value
-    except requests.exceptions.Timeout:
-        logger.error('The request to the TNG feed timed out.')
-        dust_value = 'n/a'
-        return dust_value
-    except Exception:
-        logger.warning('Unable to access TNG values!')
-        dust_value = 'n/a'
-        return dust_value
-
-
-# define the body of each modal
-body_mapping = {
-    "Humidity": html.Div([
-        "A built-in hygro-thermo sensor with an I2C interface is used to measure temperature and humidity levels.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: 0 ... 100% relative humidity",
-        html.Br(),
-        "Accuracy: ±1.8% of 10 ... 90%,",
-        html.Br(),
-        html.Span("±3.0% of 0 ... 100%", style={"display": "inline-block", "margin-left": "73px"}),
-        html.Br(),
-        "Resolution: 0.1%"
-    ]),
-    "Wind 1' Avg": html.Div([
-        "The wind speed measuring module consists of 4 ultrasonic converters, arranged in pairs of two facing each other via a reflector.",
-        html.Br(),
-        "The wind measuring values are gliding-averaged over a time span of 1 minute on a base of 100 millisecond values.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: 0.01 ... 60 m/s",
-        html.Br(),
-        "Accuracy:",
-        html.Br(),
-        html.Span("- ≤5 m/s: ±0.3 m/s", style={"display": "inline-block", "margin-left": "10px"}),
-        html.Br(),
-        html.Span("- 5 ... 60 m/s: ±3% of measured value", style={"display": "inline-block", "margin-left": "10px"}),
-        html.Br(),
-        "Resolution: 0.01 m/s",
-    ]),
-    "Wind 10' Avg": "Value of the wind data of the previous 10 minutes.",
-    "Wind Direction": html.Div([
-        "Measuring range: 0 ... 360°",
-        html.Br(),
-        "Accuracy: ±2.0° with wind speed >2 m/s",
-        html.Br(),
-        "Resolution: 0.1°",
-    ]),
-    "Wind Gusts": "Maximum value of the wind velocity (gust) of the previous 1 minute. The gust value is calculated over 3 seconds.",
-    "Global Radiation": html.Div([
-        "The global radial indicator is calculated with the brightness measurement of the 4 brightness sensors and the elevation angle of the sun position.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: 0 ... 2000 W/m²",
-        html.Br(),
-        "Accuracy: typ. ± 30 W/m² compared to a Class B pyranometer",
-        html.Br(),
-        "Resolution: 1 W/m²"
-    ]),
-    "Rain": html.Div([
-        "A Doppler radar module is used to detect precipitation and determine its intensity, quantity, and type. The radar module is mounted on top of the printed board in the device. The intensity of the last minute is extrapolated to one hour for the output.",
-        html.Br(),
-        "The precipitation intensity is always the moving average of the last minute.",
-        html.Br(),
-        html.Br(),
-        "Measuring ranges:",
-        html.Br(),
-        html.Span("- Intensities: 0.001 ... 999 mm/h", style={"display": "inline-block", "margin-left": "10px"}),
-        html.Br(),
-        html.Span("- Resolution intensity: 0.001 mm/h", style={"display": "inline-block", "margin-left": "10px"}),
-        html.Br(),
-        html.Span("- Daily total: 0.01 ... 999 mm", style={"display": "inline-block", "margin-left": "10px"}),
-        html.Br(),
-        html.Span("- Resolution daily total: 0.01 mm", style={"display": "inline-block", "margin-left": "10px"})
-    ]),
-    "Temperature": html.Div([
-        "A built-in hygro-thermo sensor with an I2C interface is used to measure temperature and humidity levels.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: -50 ... +80°C",
-        html.Br(),
-        "Accuracy: ±0.3°C @ 25°C",
-        html.Br(),
-        html.Span("±0.5°C -45 ... +60°C", style={"display": "inline-block", "margin-left": "75px"}),
-        html.Br(),
-        html.Span("±1.0°C -50 ... +80°C", style={"display": "inline-block", "margin-left": "75px"}),
-        html.Br(),
-        "Resolution: 0.1°C"
-    ]),
-    "Pressure": html.Div([
-        "Air pressure is measured with a MEMs sensor.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: 260 ... 1260 hPa",
-        html.Br(),
-        "Accuracy: typ. ± 0.25 hPa @ -20 ... +80°C @ 800 ... 1100 hPa",
-        html.Br(),
-        html.Span("typ. ± 0.50 hPa @ -20 ... +80°C @ 600 ... 1100 hPa", style={"display": "inline-block", "margin-left": "73px"}),
-        html.Br(),
-        html.Span("typ. ± 1.00 hPa @ -50 ... -20°C @ 600 ... 800 hPa", style={"display": "inline-block", "margin-left": "73px"}),
-        html.Br(),
-        "Resolution: 0.1 hPa"
-    ]),
-    "Brightness": html.Div([
-        "Brightness is measured using 4 individual photo sensors facing the 4 points of the compass at an elevation angle of 50°.",
-        html.Br(),
-        "The brightness is always averaged over 4 seconds.",
-        html.Br(),
-        html.Br(),
-        "Measuring range: 1 lux ... 150 klux.",
-        html.Br(),
-        "Accuracy: 3% of relative measured value.",
-        html.Br(),
-        "Resolution: ~0.3% of measuring value."
-    ])
-}
-
-
 def create_list_group_item(title, value, unit, timestamp, badge_color='green', row_color='default'):
     if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
         badge_color = 'secondary'
@@ -730,28 +457,6 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
     return line
 
 
-# function to open and close the modals
-def toggle_modal(n1, is_open):
-    """Toggle the state of a modal.
-    Args:
-        n1 (bool): A boolean value representing whether to toggle the state of the modal.
-        is_open (bool): A boolean value representing the current state of the modal.
-    Returns:
-        bool: If n1 is True or has a value of True, the function returns the opposite of is_open.
-            Otherwise, it returns the value of is_open.
-    This line checks if n1 is True or has a value of True. If n1 is True or has a value of True,
-    it returns the opposite of is_open. If n1 is False and does not have a True value, it returns
-    the value of is_open."""
-    if n1:  # or n2:
-        return not is_open
-    return is_open
-
-
-def get_value_or_nan(dict, key):
-    """"Limit to two decimals the output with round"""
-    return round(dict[key]['value'], 2) if dict[key]['value'] is not None else 'n/a'
-
-
 ######################
 # # Set the layout
 ######################
@@ -771,6 +476,7 @@ navbar_menu = dbc.DropdownMenu([
     dbc.DropdownMenuItem("Mountain Forecast", href="https://www.mountain-forecast.com/peaks/Roque-de-los-Muchachos/forecasts/2423", className="text-primary text-capitalize", target="_blank", external_link=True),
 ], label="Menu", style={'zindex': '999'})
 
+
 app.layout = html.Div([
     dbc.Row([
         dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
@@ -786,15 +492,15 @@ app.layout = html.Div([
                       html.Br(),
                       "stop telescope operations!"
                       ],
-                id="weather-alert",
+                id="red-alert",
                 style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
-                hidden=True),  # Initially hidden
+                hidden=True),  # Initially hidden, pops up only with non safe weather conditions
             content],
             width={"size": 12},  # Allow the content to take available space in the row
         ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
         dcc.Interval(
             id='interval-day-change',
-            interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds
+            interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds, maybe not needed this interval.
             n_intervals=0
         )
     ]),
@@ -996,10 +702,9 @@ def update_sun(n_intervals):
 
 # Define a function to update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
-               Output('live-timestamp', 'children')],
-              Output("weather-alert", "hidden"),
-              [Input('interval-livevalues', 'n_intervals')]
-              )
+               Output('live-timestamp', 'children'),
+               Output('red-alert', 'hidden')],
+              [Input('interval-livevalues', 'n_intervals')])
 def update_live_values(n_intervals, n=100):
     # Get the latest reading from the database
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
