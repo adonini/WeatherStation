@@ -172,16 +172,14 @@ app.callback(
 )(toggle_modal)
 
 app.callback(
-    Output("modal_Precipitation", "is_open"),
-    Input("open_Precipitation", "n_clicks"),
-    #Input("close_Precipitation", "n_clicks"),
-    State("modal_Precipitation", "is_open"),
+    Output("modal_Rain", "is_open"),
+    Input("open_Rain", "n_clicks"),
+    State("modal_Rain", "is_open"),
 )(toggle_modal)
 
 app.callback(
     Output("modal_Pressure", "is_open"),
     Input("open_Pressure", "n_clicks"),
-    #Input("close_Precipitation", "n_clicks"),
     State("modal_Pressure", "is_open"),
 )(toggle_modal)
 
@@ -210,7 +208,7 @@ app.callback(
      Input("modal_Temperature", "is_open"),
      Input("modal_Brightness", "is_open"),
      Input("modal_Global Radiation", "is_open"),
-     Input("modal_Precipitation", "is_open"),
+     Input("modal_Rain", "is_open"),
      Input("modal_Pressure", "is_open"),
      Input("modal_Wind Rose", "is_open"),
      Input("modal_summary", "is_open")],
@@ -218,10 +216,10 @@ app.callback(
      State('interval-livevalues', 'disabled')],
 )
 def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
-                     is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation,
+                     is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
                      is_open_pressure, is_open_windrose, is_open_summary, interval1_disabled, interval2_disabled):
     if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
-            is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_precipitation,
+            is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
             is_open_pressure, is_open_windrose, is_open_summary]):
         interval1_disabled = True
         interval2_disabled = True
