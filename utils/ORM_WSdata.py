@@ -28,12 +28,12 @@ async def main():
                 f"</fitsheader>"
 
             # Write the text content to a file
-            print("Writing to file")
+            #print("Writing to file")
             with open("WS10.txt", "w") as file:
                 file.write(text_content)
 
             # sleep 15s before next pulling
-            print("Sleeping 50sec")
+            #print("Sleeping 50sec")
             time.sleep(50)
 
 
