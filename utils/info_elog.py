@@ -4,8 +4,8 @@ import pymongo
 
 
 #  connection to WS mongo
-uri_ws = 'mongodb://tcs05-int:27010/'
-#uri_ws = 'mongodb://localhost:27010/'
+#uri_ws = 'mongodb://tcs05-int:27010/'
+uri_ws = 'mongodb://localhost:27010/'
 dbName_ws = 'WS'
 collectionName_ws = 'Readings'
 
@@ -14,8 +14,8 @@ db_ws = client_ws[dbName_ws]
 collection_ws = db_ws[collectionName_ws]
 
 #  connection to caco mongo
-uri_caco = 'mongodb://lst101-int:27018/'
-#uri_caco = 'mongodb://localhost:27018/'
+#uri_caco = 'mongodb://lst101-int:27018/'
+uri_caco = 'mongodb://localhost:27021/'
 dbName_caco = 'CACO'
 collectionName_tib = 'TIB_min'
 collectionName_clusco = 'CLUSCO_min'
@@ -31,7 +31,7 @@ current_datetime = datetime.utcnow()
 current_time = current_datetime.strftime("%H:%M:%S")
 #print(current_datetime)
 
-######## WEATHER SECTION ############
+# WEATHER SECTION #
 #find the most recent doc
 most_recent_doc = collection_ws.find_one({}, sort=[('_id', pymongo.DESCENDING)])
 # Extract date and time values from the document
@@ -58,14 +58,14 @@ else:
     print("WARNING: Weather timestamp is older than 1 minute!")
 
 
-######### CAMERA SECTION #########
+# CAMERA SECTION #
 
 time_threshold = current_datetime - timedelta(minutes=10)
-tib_queries = [{"name": "TIB_Rates_LocalRate", "date": {"$gte": time_threshold}},
-               {"name": "TIB_Rates_CameraRate", "date": {"$gte": time_threshold}},
-               {"name": "TIB_Rates_BUSYRate", "date": {"$gte": time_threshold}},
-               {"name": "TIB_Rates_CalibrationRate", "date": {"$gte": time_threshold}},
-               {"name": "TIB_Rates_PedestalRate", "date": {"$gte": time_threshold}},
+tib_queries = [{"name": "TIB_Rates_LocalRate"},  # "date": {"$gte": time_threshold}},
+               {"name": "TIB_Rates_CameraRate"},  # "date": {"$gte": time_threshold}},
+               {"name": "TIB_Rates_BUSYRate"},  # "date": {"$gte": time_threshold}},
+               {"name": "TIB_Rates_CalibrationRate"},  # "date": {"$gte": time_threshold}},
+               {"name": "TIB_Rates_PedestalRate"},  # "date": {"$gte": time_threshold}},
                ]
 tib_avg_values = {
     "TIB_Rates_LocalRate": "N/A",
@@ -75,7 +75,7 @@ tib_avg_values = {
     "TIB_Rates_PedestalRate": "N/A",
 }
 clusco_query = {"name": "clusco_mean_dc", "date": {"$gte": time_threshold}}
-evb_query = {"name": "RunNumber", "date": {"$gte": current_datetime - timedelta(minutes=10)}}
+evb_query = {"name": "RunNumber", "date": {"$gte": current_datetime - timedelta(minutes=12)}}
 
 # Iterate over the queries and retrieve the most recent entry for each (already considered the ones not older than 1min)
 for query in tib_queries:

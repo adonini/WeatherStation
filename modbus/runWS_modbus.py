@@ -1,9 +1,9 @@
-from WS_utils import (
+from modbus.WS_utils import (
     setup_sync_client,
     connect_client,
     #readHoldingRegister,
     readInputRegisters,
-    stop_client,
+    #stop_client,
     inputregister_dict,
     precipitationtype_dict,
 )

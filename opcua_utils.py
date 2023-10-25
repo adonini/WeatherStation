@@ -1,38 +1,12 @@
 import logging
-import time
-from pathlib import Path
+#import time
+#from pathlib import Path
 import json
 from asyncua import Client
-import asyncio
-
+#import asyncio
 
 logger = logging.getLogger('main.asyncua')
 #logger.setLevel(logging.DEBUG)
-
-# Define the variables to be read from the server
-# data_variables = ['Mean Wind Speed',
-#                   'Max Wind',
-#                   'Average Wind Speed',
-#                   'Mean Wind Direction',
-#                   'Air Temperature',
-#                   'Wind Chill Temperature',
-#                   'Heat Index Temperature',
-#                   'Relative Humidity',
-#                   'Dew Point Temperature',
-#                   'Absolute Air Pressure',
-#                   'Global Radiation',
-#                   'Brightness (kLux)',
-#                   'Brightness (Lux)',
-#                   'Precipitation Status',
-#                   'Precipitation Intensity'
-#                   'Precipitation Amount',
-#                   'Precipitation Type',
-#                   'Date',
-#                   'Time',
-#                   'Internal Temperature',
-#                   'Wind Sensor Status',
-#                   'Height',
-#                   ]
 
 
 class SubHandler(object):
@@ -154,9 +128,9 @@ class OPCUAConnection():
 
 
 # async def read_values(self, nodes):
-        
+
 #         Read the value of multiple nodes in one ua call.
-        
+
 #         nodeids = [node.nodeid for node in nodes]
 #         results = await self.uaclient.read_attributes(nodeids, ua.AttributeIds.Value)
 #         return [result.Value.Value for result in results]

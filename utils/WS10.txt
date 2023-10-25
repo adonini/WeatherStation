@@ -1,0 +1,9 @@
+<?xml version='1.0'?>
+<fitsheader>
+   <fitsitem name='WeatherStation.LST.date' value='2023-06-08 10:58:13'/>
+   <fitsitem name='WeatherStation.LST.LocalMastAirTemp' value='12.300000190734863'/>
+   <fitsitem name='WeatherStation.LST.LocalMastHumidity' value='21.299999237060547'/>
+   <fitsitem name='WeatherStation.LST.LocalMastWindSpeed' value='8.800000190734863'/>
+   <fitsitem name='WeatherStation.LST.LocalMastWindDirection' value='238.8000030517578'/>
+   <fitsitem name='WeatherStation.LST.LocalMastPressure' value='784.780029296875'/>
+</fitsheader>
