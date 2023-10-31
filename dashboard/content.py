@@ -6,6 +6,45 @@ from utils_functions import make_card_grid, speed_labels
 import numpy as np
 
 
+# Map combinations of alerts to messages
+# order of alerts: humidity, wind (gusts or wind), rain
+alert_messages = {
+    (False, False, False): "No adverse weather conditions.",
+    (True, False, False):  [html.Div(["Attention, adverse weather conditions:",
+                                      html.Br(),
+                                      "high humidity, close camera shutter!"
+                                      ])],
+    (False, True, False): [html.Div(["Attention, adverse weather conditions:",
+                                     html.Br(),
+                                     "strong wind, close camera shutter and bring telescope to standby!"
+                                     ])],
+    (False, False, True): [html.Div(["Attention, adverse weather conditions:",
+                                     html.Br(),
+                                     "rain detected, close the camera shutter!"
+                                     ])],
+    (True, True, False): [html.Div(["Attention, adverse weather conditions:",
+                                    html.Br(),
+                                    "high humidity and strong wind, close camera shutter and bring telescope to standby!"
+                                    ])],
+    (True, False, True): [html.Div(["Attention, adverse weather conditions:",
+                                    html.Br(),
+                                    "high humidity and rain detected, close camera shutter!"
+                                    ])],
+    (False, True, True): [html.Div(["Attention, adverse weather conditions:",
+                                    html.Br(),
+                                    "strong wind and rain detected, close camera shutter and bring telescope to standby!"
+                                    ])],
+    (True, True, True): [html.Div(["Attention, adverse weather conditions:",
+                                   html.Br(),
+                                   "high humidity, strong wind and rain detected, park the telescope and stop operations!"
+                                   ])],
+    (True, False, False, True): [html.Div(["Attention, adverse weather conditions:",
+                                           html.Br(),
+                                           "very strong wind, bring the telescope to safe and go to residencia!"
+                                           ])],
+}
+
+
 ######################
 #   Card components
 ######################
