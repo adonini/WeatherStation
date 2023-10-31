@@ -17,13 +17,15 @@ import astropy.units as u
 from astroplan import Observer
 from waitress import serve
 import uuid
+import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              combine_datetime, get_magic_values,
                              get_tng_dust_value, toggle_modal,
                              get_value_or_nan)
-from configurations import (location_lst, spd_colors_speed, precipitationtype_dict)
+from configurations import (location_lst, spd_colors_speed,
+                            precipitationtype_dict)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
-from content import content, dir_bins, dir_labels, spd_bins, spd_labels
+from content import content, dir_bins, dir_labels, spd_bins, spd_labels, alert_messages
 from navbar import navbar_menu
 
 
@@ -82,13 +84,9 @@ app.layout = html.Div([
     dbc.Row([
         html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
         dbc.Row(dbc.Col([
-            html.Div(["Attention, adverse weather conditions:",
-                      html.Br(),
-                      "stop telescope operations!"
-                      ],
-                id="red-alert",
-                style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
-                hidden=True),  # Initially hidden, pops up only with non safe weather conditions
+            html.Div(id="red-alert",
+                     style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
+                     hidden=True),  # Initially hidden, pops up only with non safe weather conditions
             content],
             width={"size": 12},  # Allow the content to take available space in the row
         ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
@@ -294,7 +292,8 @@ def update_sun(n_intervals):
 # Define a function to update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
-               Output('red-alert', 'hidden')],
+               Output('red-alert', 'hidden'),
+               Output('red-alert', 'children')],
               [Input('interval-livevalues', 'n_intervals')])
 def update_live_values(n_intervals, n=100):
     # Get the latest reading from the database
@@ -355,9 +354,19 @@ def update_live_values(n_intervals, n=100):
     gust_alert = g_speed >= 60
     wind_alert = w10_speed >= 36
     precip_alert = p_int > 0
+    strong_wind_alert = g_speed >= 85 or w_speed >= 50
 
     # Determine if there's an alert
-    is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert])
+    is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
+    # Generate combinations using list comprehensions
+    wind_alert_combination = wind_alert or gust_alert
+    combinations = [subset for subset in itertools.combinations([hum_alert, wind_alert_combination, precip_alert], 3)]
+    # Determine the message based on the combination of alerts
+    message = alert_messages.get(tuple(combinations[0]), "Combination not found in alert messages")
+
+    # Override any alert with "very strong wind" message
+    if strong_wind_alert:
+        message = alert_messages.get((True, False, False, True), '')
 
     # Format the live values as a list
     live_values = [
@@ -417,7 +426,8 @@ def update_live_values(n_intervals, n=100):
 
     return [live_values,
             dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap"),
-            not is_alert]
+            not is_alert,
+            message]
 
 
 # Define the callback function to update the temp graph
@@ -837,8 +847,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
             .sort_index(axis=1)
             .applymap(lambda x: x / total_count * 100)
             )
-    #print(rose)
-    # Create the wind rose plot
+
     fig = go.Figure()
     #print(rose.columns)
     for i, col in enumerate(rose.columns):
