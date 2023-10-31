@@ -354,7 +354,7 @@ def update_live_values(n_intervals, n=100):
     gust_alert = g_speed >= 60
     wind_alert = w10_speed >= 36
     precip_alert = p_int > 0
-    strong_wind_alert = g_speed >= 85 or w_speed >= 50
+    strong_wind_alert = g_speed >= 85 or w10_speed >= 50
 
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
