@@ -183,3 +183,37 @@ def toggle_modal(n1, is_open):
 def get_value_or_nan(dict, key):
     """"Limit to two decimals the output with round"""
     return round(dict[key]['value'], 2) if dict[key]['value'] is not None else 'n/a'
+
+
+def handle_data_gaps(timestamps, *data_lists, max_time_diff=120):
+    """
+    Handle data gaps in multiple lists of data with corresponding timestamps.
+
+    Args:
+        timestamps (list): A list of timestamp values.
+        *data_lists (lists): Variable number of lists containing data corresponding to the timestamps.
+        max_time_diff (float, optional): The maximum time difference allowed to consider data points as continuous. Defaults to 120 seconds.
+
+    Returns:
+        Tuple: A tuple containing the updated timestamp list and the updated data lists for the provided data.
+    """
+    new_data = [[] for _ in range(len(data_lists))]  # initialize empty lists, 3 values -> 3 lists
+    new_timestamps = []  # initialize this with the first timestamp already
+    prev_timestamp = timestamps[0]  # initialize the prev_timestamp with the timestamp of the first entry (which is the MOST RECENT!!)
+    # Initialize each list with the first value
+    new_timestamps.append(timestamps[0])
+    for i in range(len(data_lists)):
+        new_data[i].append(data_lists[i][0])
+    for timestamp, *values in zip(timestamps[1:], *data_lists):
+        time_difference = abs((timestamp - prev_timestamp).total_seconds())
+
+        if time_difference >= max_time_diff:
+            new_timestamps.append(None)
+            for i in range(len(values)):
+                new_data[i].append(None)
+        new_timestamps.append(timestamp)
+        for i, value in enumerate(values):
+            new_data[i].append(value)
+
+        prev_timestamp = timestamp
+    return new_timestamps, *new_data

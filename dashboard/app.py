@@ -21,7 +21,7 @@ import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              combine_datetime, get_magic_values,
                              get_tng_dust_value, toggle_modal,
-                             get_value_or_nan)
+                             get_value_or_nan, handle_data_gaps)
 from configurations import (location_lst, spd_colors_speed,
                             precipitationtype_dict)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
@@ -112,121 +112,6 @@ app.layout = html.Div([
 ######################
 # Callback functions
 ######################
-# Modals updates
-app.callback(
-    Output("modal_Humidity", "is_open"),
-    Input("open_Humidity", "n_clicks"),
-    #Input("close_Humidity", "n_clicks"),
-    State("modal_Humidity", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Wind 1' Avg", "is_open"),
-    Input("open_Wind 1' Avg", "n_clicks"),
-    #Input("close_Wind Speed", "n_clicks"),
-    State("modal_Wind 1' Avg", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Wind 10' Avg", "is_open"),
-    Input("open_Wind 10' Avg", "n_clicks"),
-    #Input("close_Wind 10' Avg", "n_clicks"),
-    State("modal_Wind 10' Avg", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Wind Gusts", "is_open"),
-    Input("open_Wind Gusts", "n_clicks"),
-    #Input("close_Max Wind Speed", "n_clicks"),
-    State("modal_Wind Gusts", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Wind Direction", "is_open"),
-    Input("open_Wind Direction", "n_clicks"),
-    #Input("close_Wind Direction", "n_clicks"),
-    State("modal_Wind Direction", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Temperature", "is_open"),
-    Input("open_Temperature", "n_clicks"),
-    #Input("close_Air Temperature", "n_clicks"),
-    State("modal_Temperature", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Brightness", "is_open"),
-    Input("open_Brightness", "n_clicks"),
-    #Input("close_Brightness", "n_clicks"),
-    State("modal_Brightness", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Global Radiation", "is_open"),
-    Input("open_Global Radiation", "n_clicks"),
-    #Input("close_Global Radiation", "n_clicks"),
-    State("modal_Global Radiation", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Rain", "is_open"),
-    Input("open_Rain", "n_clicks"),
-    State("modal_Rain", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Pressure", "is_open"),
-    Input("open_Pressure", "n_clicks"),
-    State("modal_Pressure", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_Wind Rose", "is_open"),
-    Input("Wind Rose-info-icon", "n_clicks"),
-    State("modal_Wind Rose", "is_open"),
-)(toggle_modal)
-
-app.callback(
-    Output("modal_summary", "is_open"),
-    Input("summary-info-icon", "n_clicks"),
-    State("modal_summary", "is_open"),
-)(toggle_modal)
-
-
-# callback to enable or disable the intervals based on their respective states in case a modal is open
-@app.callback(
-    [Output('interval-component', 'disabled'),
-     Output('interval-livevalues', 'disabled')],
-    [Input("modal_Humidity", "is_open"),
-     Input("modal_Wind 1' Avg", "is_open"),
-     Input("modal_Wind 10' Avg", "is_open"),
-     Input("modal_Wind Gusts", "is_open"),
-     Input("modal_Wind Direction", "is_open"),
-     Input("modal_Temperature", "is_open"),
-     Input("modal_Brightness", "is_open"),
-     Input("modal_Global Radiation", "is_open"),
-     Input("modal_Rain", "is_open"),
-     Input("modal_Pressure", "is_open"),
-     Input("modal_Wind Rose", "is_open"),
-     Input("modal_summary", "is_open")],
-    [State('interval-component', 'disabled'),
-     State('interval-livevalues', 'disabled')],
-)
-def update_intervals(is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
-                     is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
-                     is_open_pressure, is_open_windrose, is_open_summary, interval1_disabled, interval2_disabled):
-    if any([is_open_humidity, is_open_wind_speed, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
-            is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
-            is_open_pressure, is_open_windrose, is_open_summary]):
-        interval1_disabled = True
-        interval2_disabled = True
-    else:
-        interval1_disabled = False
-        interval2_disabled = False
-    return interval1_disabled, interval2_disabled
-
-
 # Callback to update the time and date every 20sec
 @app.callback(
     [Output('current-time', 'children'),
@@ -467,9 +352,12 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
+    # correct for data missing for >2min so that no line in connecting the dots in that case
+    new_timestamps, new_temps, new_dews = handle_data_gaps(timestamps, temps, dews)
+
     # Create the figure
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=timestamps, y=temps,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_temps,
                              name='Temperature',
                              line_color="#316395",
                              hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
@@ -479,7 +367,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                   )
 
     # Add dew-point temp to the plot
-    fig.add_trace(go.Scatter(x=timestamps, y=dews,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_dews,
                              name='Dew Point',
                              line_color='firebrick',
                              line_dash='dot',
@@ -548,10 +436,13 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
+    # correct for data missing for >2min so that no line in connecting the dots in that case
+    new_timestamps, new_hums = handle_data_gaps(timestamps, hums)
+
     # Create the figure
     fig = go.Figure()
 # aggiungere che se il valor di hum e NaN allora viene scartato assieme al timestamp per quella entry
-    fig.add_trace(go.Scatter(x=timestamps, y=hums,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_hums,
                              name='Humidity',
                              hoveron='points',
                              line_color="#316395",
@@ -631,12 +522,15 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
+    # correct for data missing for >2min so that no line in connecting the dots in that case
+    new_timestamps, new_w_speed, new_w10_speed, new_g_speed = handle_data_gaps(timestamps, w_speed, w10_speed, g_speed)
+
     # Wind 1' trace
     #if latest_wdata is not None:
     w_name = "Wind 1' Avg"
     # if latest_wdata >= 50:
     #     w_name = '<span style="color:red">&#x26a0; Wind speed</span>'
-    fig.add_trace(go.Scatter(x=timestamps, y=w_speed,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_w_speed,
                              name=w_name,
                              hoveron='points',
                              line_color="#316395",
@@ -653,7 +547,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     g_name = 'Wind Gusts'
     if latest_gdata >= 60:
         g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
-    fig.add_trace(go.Scatter(x=timestamps, y=g_speed,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_g_speed,
                              name=g_name,
                              hoveron='points',
                              line_color='#86ce00',
@@ -672,7 +566,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     w10_name = "Wind 10' Avg"
     if latest_w10data >= 36:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
-    fig.add_trace(go.Scatter(x=timestamps, y=w10_speed,
+    fig.add_trace(go.Scatter(x=new_timestamps, y=new_w10_speed,
                              name=w10_name,
                              hoveron='points',
                              line_color="rgb(219,112,147)",
@@ -684,16 +578,6 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     if latest_w10data >= 36:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
 
-    # Trend trace
-    # https://stackoverflow.com/questions/74485762/scikit-learn-linear-regression-using-datetime-values-and-forecasting
-    #model = LinearRegression().fit(timestamps, w_speed)
-    #y_hat = model.predict(w_speed)
-    #fig.add_trace(go.Scatter(x=timestamps, y=y_hat,
-    #                         name='Wind trend',
-    #                         line_color="black"
-    #                         )
-    #              )
-    # Initialize empty lists for tick values and tick text
     yaxis_tickvals = [0, 20, 36, 40, 60, 80, 100, 120, 140]
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
@@ -753,14 +637,17 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     # Get the brightness values
-    press = [d['Brightness lux']['value'] for d in data]
+    bright = [d['Brightness lux']['value'] for d in data]
     # create a list of tuple
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
+    # correct for data missing for >2min so that no line in connecting the dots in that case
+    new_timestamps, new_bright = handle_data_gaps(timestamps, bright)
+
     # Create the figure
     dict = {
-        'data': [{'x': timestamps, 'y': press}],
+        'data': [{'x': new_timestamps, 'y': new_bright}],
         'layout': {
             #'title': f'brightness in the Last {time_range} Hours',
             'xaxis': {'tickangle': 45},
@@ -952,9 +839,12 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
+    # correct for data missing for >2min so that no line in connecting the dots in that case
+    new_timestamps, new_rad = handle_data_gaps(timestamps, rad)
+
     # Create the figure
     dict = {
-        'data': [{'x': timestamps, 'y': rad}],
+        'data': [{'x': new_timestamps, 'y': rad}],
         'layout': {
             #'title': f'Global radiation in the Last {time_range} Hours',
             'xaxis': {'tickangle': 45},
@@ -981,6 +871,121 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+
+
+# Modals updates
+app.callback(
+    Output("modal_Humidity", "is_open"),
+    Input("open_Humidity", "n_clicks"),
+    #Input("close_Humidity", "n_clicks"),
+    State("modal_Humidity", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind 1' Avg", "is_open"),
+    Input("open_Wind 1' Avg", "n_clicks"),
+    #Input("close_Wind Speed", "n_clicks"),
+    State("modal_Wind 1' Avg", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind 10' Avg", "is_open"),
+    Input("open_Wind 10' Avg", "n_clicks"),
+    #Input("close_Wind 10' Avg", "n_clicks"),
+    State("modal_Wind 10' Avg", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Gusts", "is_open"),
+    Input("open_Wind Gusts", "n_clicks"),
+    #Input("close_Max Wind Speed", "n_clicks"),
+    State("modal_Wind Gusts", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Direction", "is_open"),
+    Input("open_Wind Direction", "n_clicks"),
+    #Input("close_Wind Direction", "n_clicks"),
+    State("modal_Wind Direction", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Temperature", "is_open"),
+    Input("open_Temperature", "n_clicks"),
+    #Input("close_Air Temperature", "n_clicks"),
+    State("modal_Temperature", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Brightness", "is_open"),
+    Input("open_Brightness", "n_clicks"),
+    #Input("close_Brightness", "n_clicks"),
+    State("modal_Brightness", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Global Radiation", "is_open"),
+    Input("open_Global Radiation", "n_clicks"),
+    #Input("close_Global Radiation", "n_clicks"),
+    State("modal_Global Radiation", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Rain", "is_open"),
+    Input("open_Rain", "n_clicks"),
+    State("modal_Rain", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Pressure", "is_open"),
+    Input("open_Pressure", "n_clicks"),
+    State("modal_Pressure", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_Wind Rose", "is_open"),
+    Input("Wind Rose-info-icon", "n_clicks"),
+    State("modal_Wind Rose", "is_open"),
+)(toggle_modal)
+
+app.callback(
+    Output("modal_summary", "is_open"),
+    Input("summary-info-icon", "n_clicks"),
+    State("modal_summary", "is_open"),
+)(toggle_modal)
+
+
+# callback to enable or disable the intervals based on their respective states in case a modal is open
+@app.callback(
+    [Output('interval-component', 'disabled'),
+     Output('interval-livevalues', 'disabled')],
+    [Input("modal_Wind 1' Avg", "is_open"),
+     Input("modal_Humidity", "is_open"),
+     Input("modal_Wind 10' Avg", "is_open"),
+     Input("modal_Wind Gusts", "is_open"),
+     Input("modal_Wind Direction", "is_open"),
+     Input("modal_Temperature", "is_open"),
+     Input("modal_Brightness", "is_open"),
+     Input("modal_Global Radiation", "is_open"),
+     Input("modal_Rain", "is_open"),
+     Input("modal_Pressure", "is_open"),
+     Input("modal_Wind Rose", "is_open"),
+     Input("modal_summary", "is_open")],
+    [State('interval-component', 'disabled'),
+     State('interval-livevalues', 'disabled')],
+)
+def update_intervals(is_open_wind_speed, is_open_humidity, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
+                     is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
+                     is_open_pressure, is_open_windrose, is_open_summary, interval1_disabled, interval2_disabled):
+    if any([is_open_wind_speed, is_open_humidity, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
+            is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
+            is_open_pressure, is_open_windrose, is_open_summary]):
+        interval1_disabled = True
+        interval2_disabled = True
+    else:
+        interval1_disabled = False
+        interval2_disabled = False
+    return interval1_disabled, interval2_disabled
 
 
 # Run the app
