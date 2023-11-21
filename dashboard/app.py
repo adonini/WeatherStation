@@ -243,6 +243,9 @@ def update_live_values(n_intervals, n=100):
 
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
+    if is_alert:
+        logger.info("One of the weather limisits exceed the safety value. Alert is sent.")
+        logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, hunidity: {hum}, rain: {p_int}")
     # Generate combinations using list comprehensions
     wind_alert_combination = wind_alert or gust_alert
     combinations = [subset for subset in itertools.combinations([hum_alert, wind_alert_combination, precip_alert], 3)]
@@ -251,6 +254,7 @@ def update_live_values(n_intervals, n=100):
 
     # Override any alert with "very strong wind" message
     if strong_wind_alert:
+        logger.info("Very strong wind alert sent")
         message = alert_messages.get((True, False, False, True), '')
 
     # Format the live values as a list
