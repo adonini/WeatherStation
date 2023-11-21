@@ -256,6 +256,7 @@ def update_live_values(n_intervals, n=100):
     if strong_wind_alert:
         logger.info("Very strong wind alert sent")
         message = alert_messages.get((True, False, False, True), '')
+    logger.info(f"Message of the alert: {message}")
 
     # Format the live values as a list
     live_values = [
