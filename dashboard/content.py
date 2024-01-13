@@ -115,17 +115,17 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
         size="md",
         color="primary",
         delay_show=1000,
-        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "97%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
+        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "99%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
         #id=f"{graph_id}-loading",
     )
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
-            dbc.CardBody(body, style={"maxHeight": 500, "width": "100%", "padding": 0}),
+            dbc.CardBody(body, style={"width": "100%", "padding": 0}),  # "maxHeight": 500,
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
-        className="m-2 shadow",
-        style={"minWidth": "36rem", "maxHeight": "36rem"},
+        className="dbc m-2 shadow",
+        style={"minWidth": "28rem"}  # "maxHeight": "36rem"},
     )
 
 

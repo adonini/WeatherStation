@@ -106,7 +106,7 @@ app.layout = html.Div([
             ])
         ])
     ])
-], className="container-fluid")
+], className="container-fluid dbc dbc-ag-grid")
 
 
 ######################
@@ -133,12 +133,9 @@ def update_date_time(n_intervals):
 )
 def update_moon(n_intervals):
     location = EarthLocation(lat=location_lst[0] * u.deg, lon=location_lst[1] * u.deg, height=location_lst[2] * u.m)
-    # Get the current time in UTC
     now = datetime.utcnow()
     obs = Observer(location=location, timezone="UTC")
-    # Calculate moon illumination
     moon_illumination = obs.moon_illumination(now) * 100
-    # Determine the moon's rise and set times
     try:
         moon_rise_time = obs.moon_rise_time(now, which='nearest').strftime('%d-%m-%Y %H:%M:%S UTC')
     except Exception as e:
@@ -205,7 +202,6 @@ def update_live_values(n_intervals, n=100):
                 timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
                 break  # exit the loop if a valid timestamp is found
             except Exception as e:
-                #print(f'Error in timestamp entry: {e}.')
                 logger.error(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
                 logger.warning(f'Checking the {i}-to-last entry in the database.')
                 latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=i)
@@ -235,6 +231,7 @@ def update_live_values(n_intervals, n=100):
     p_acc = get_value_or_nan(latest_data, 'Precipitation Amount')
     rad = get_value_or_nan(latest_data, 'Global Radiation')
 
+    # define alert thresholds
     hum_alert = hum >= 90
     gust_alert = g_speed >= 60
     wind_alert = w10_speed >= 36
@@ -244,9 +241,8 @@ def update_live_values(n_intervals, n=100):
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
     if is_alert:
-        logger.info("One of the weather limisits exceed the safety value. Alert is sent.")
+        logger.info("One of the weather limits exceed the safety value. Alert is sent.")
         logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, hunidity: {hum}, rain: {p_int}")
-    # Generate combinations using list comprehensions
     wind_alert_combination = wind_alert or gust_alert
     combinations = [subset for subset in itertools.combinations([hum_alert, wind_alert_combination, precip_alert], 3)]
     # Determine the message based on the combination of alerts
@@ -276,16 +272,9 @@ def update_live_values(n_intervals, n=100):
         create_list_group_item("Global Radiation", rad, ' W/m2', timestamps),
         create_list_group_item("Pressure", press, ' hPa', timestamps),
         create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
-
     ]
 
-    # Check wind speed and change the background color accordingly
     if timestamps > (datetime.utcnow() - timedelta(minutes=5)):
-        # if w_speed != 'n/a':
-        #     if w_speed >= 50:
-        #         live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h')
-        #     elif 40 <= w_speed < 50:
-        #         live_values[1] = create_list_group_item_alert("Wind Speed", w_speed, ' km/h', badge_color='warning', row_color='warning')
         # Check humidity and change the background color accordingly
         if hum != 'n/a':
             if hum >= 90:
@@ -293,6 +282,7 @@ def update_live_values(n_intervals, n=100):
             elif 80 <= hum < 90:
                 live_values[0] = create_list_group_item_alert("Humidity", hum, ' %', badge_color='warning', row_color='warning')
 
+        # Check wind 10' speed and change the background color accordingly
         if w10_speed != 'n/a':
             if w10_speed >= 36:
                 live_values[2] = create_list_group_item_alert("Wind 10' Avg", w10_speed, ' km/h')
@@ -367,7 +357,6 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                              line_color="#316395",
                              hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
                              connectgaps=False,
-                             #line=dict(color='firebrick')
                              )
                   )
 
@@ -400,7 +389,6 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    #if dash.callback_context.triggered[0]['prop_id'] == 'temp_hour_choice.value':
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
@@ -411,7 +399,6 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                Input('hum_hour_choice', 'value'),
                Input('Humidity-refresh-button', 'n_clicks')])
 def update_hum_graph(n_intervals, time_range, refresh_clicks):
-    # Define the projection to query only the required fields
     projection = {
         'added': 1,
         'Relative Humidity.value': 1,
@@ -419,7 +406,6 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
         'Date': 1,
         '_id': 0
     }
-    # Query the data from the database
     data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
                                 projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
@@ -435,9 +421,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
 
     # Get the most recent value
     latest_data = data[0]['Relative Humidity']['value']
-    # Get the humidity values
     hums = [d['Relative Humidity']['value'] for d in data]
-    # Get the WS timestamps
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
