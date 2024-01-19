@@ -16,17 +16,6 @@ time_options = [{'label': '1 Hour', 'value': 1},
                 {'label': '24 Hours', 'value': 24},
                 {'label': '48 Hours', 'value': 48}]
 
-# content page style
-content_style = {
-    #"margin-left": "2%",
-    #"margin-right": "-2 rem",
-    #"padding": "2rem 1rem",
-    "min-width": "600px",
-    #"overflow": "scroll",
-    #"flex-grow": "1",
-    "z-index": "5",
-}
-
 # sidebar style
 sidebar_style = {
     "text-align": "center",

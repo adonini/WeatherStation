@@ -11,6 +11,7 @@ logger = logging.getLogger('app.functions')
 
 
 # function to define the card grid of the main content
+# not used anymore
 def make_card_grid(cards, cards_per_row=2):
     row = []
     #print(row)
@@ -106,10 +107,9 @@ def combine_datetime(date_time_list):
 
 
 def get_magic_values():
-    """Retrieve TNG dust value, cloud value, and TRAN9 value from the MAGIC astronomical observatory website.
+    """Retrieve cloud value, and TRAN9 value from the MAGIC website.
     Returns:
         tuple: A tuple containing three strings:
-            - tng_dust_value: The TNG dust value.
             - cloud_value: The cloud value.
             - tran9_value: The TRAN9 value.
     If there is a problem accessing the website or if the request times out, the function returns 'n/a' for all values.

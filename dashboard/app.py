@@ -82,14 +82,13 @@ app.layout = html.Div([
     ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
     html.Hr(),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        dbc.Row(dbc.Col([
+        dbc.Col(sidebar, className="col-12 col-s p-0"),
+        dbc.Col([
             html.Div(id="red-alert",
-                     style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
+                     style={"margin-bottom": "5px", "background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
                      hidden=True),  # Initially hidden, pops up only with non safe weather conditions
             content],
-            width={"size": 12},  # Allow the content to take available space in the row
-        ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
+            className="justify-content-around col-12 col-c"),
         dcc.Interval(
             id='interval-day-change',
             interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds, maybe not needed this interval.
@@ -106,7 +105,7 @@ app.layout = html.Div([
             ])
         ])
     ])
-], className="container-fluid dbc dbc-ag-grid")
+], className="container-fluid dbc")
 
 
 ######################
