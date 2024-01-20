@@ -375,7 +375,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                       autosize=False,
                       yaxis_title='Temperature [°C]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
                       template='plotly_white',
                       legend=dict(x=1, y=0.9),
                       modebar_add=["hovercompare", "v1hovermode"],
@@ -445,7 +446,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                       autosize=False,
                       yaxis_title='Humidity [%]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
                       template='plotly_white',
                       )
     fig.update_xaxes(showgrid=False)
@@ -575,7 +577,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                       autosize=False,
                       yaxis_title='Wind speed [km/h]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
                       template='plotly_white',
                       modebar_add=["hovercompare", "v1hovermode"],
                       legend=dict(x=1, y=0.9),
@@ -643,7 +646,7 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
             #'width': 620,
             #'height': 400,
             'autosize': False,
-            'margin': {'t': 2},
+            'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',
         }
     }
@@ -747,7 +750,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
-        margin=dict(l=25, r=0, t=20, b=20),
+        margin=dict(l=35, r=0, t=20, b=20),
         uirevision=True,
         #polar=dict(radialaxis=dict(showticklabels=False)),
         polar_radialaxis_ticksuffix='%',
@@ -841,7 +844,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
             #'height': 400,
             'autosize': False,
             #"xaxis.autorange": True,
-            'margin': {'t': 2},
+            'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',
         }
     }
