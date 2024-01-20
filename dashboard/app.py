@@ -378,7 +378,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                       margin_t=20,
                       margin_r=20,
                       template='plotly_white',
-                      legend=dict(x=1, y=0.9),
+                      legend=dict(orientation="h", yanchor="bottom",
+                                  y=1.02, xanchor="right", x=1),
                       modebar_add=["hovercompare", "v1hovermode"],
                       )
     fig.update_xaxes(showgrid=False)
@@ -581,7 +582,8 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                       margin_r=20,
                       template='plotly_white',
                       modebar_add=["hovercompare", "v1hovermode"],
-                      legend=dict(x=1, y=0.9),
+                      legend=dict(orientation="h", yanchor="bottom",
+                                  y=1.02, xanchor="right", x=1),
                       yaxis_ticks="outside",
                       yaxis_tickmode="array",
                       yaxis_tickvals=yaxis_tickvals,
