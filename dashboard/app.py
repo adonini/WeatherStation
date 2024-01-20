@@ -381,6 +381,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                       legend=dict(orientation="h", yanchor="bottom",
                                   y=1.02, xanchor="right", x=1),
                       modebar_add=["hovercompare", "v1hovermode"],
+                      modebar_orientation="v",
                       )
     fig.update_xaxes(showgrid=False)
 
@@ -442,13 +443,12 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                   )
     fig.update_layout(yaxis_range=[0, 100],
                       uirevision=True,  # stay zoomed in with an update
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Humidity [%]',
                       xaxis_tickangle=45,
                       margin_t=20,
                       margin_r=20,
+                      modebar_orientation="v",
                       template='plotly_white',
                       )
     fig.update_xaxes(showgrid=False)
@@ -582,6 +582,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                       margin_r=20,
                       template='plotly_white',
                       modebar_add=["hovercompare", "v1hovermode"],
+                      modebar_orientation="v",
                       legend=dict(orientation="h", yanchor="bottom",
                                   y=1.02, xanchor="right", x=1),
                       yaxis_ticks="outside",
@@ -655,6 +656,7 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     fig = go.Figure(dict)
     fig.update_layout(yaxis_range=[0, 160000],
                       uirevision=True,
+                      modebar_orientation="v",
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
@@ -853,6 +855,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     fig = go.Figure(dict)
     fig.update_layout(yaxis_range=[0, 1300],
                       uirevision=True,
+                      modebar_orientation="v",
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
