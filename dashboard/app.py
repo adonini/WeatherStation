@@ -370,8 +370,6 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                   )
     fig.update_layout(yaxis_range=[-30, 30],
                       uirevision=True,
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Temperature [°C]',
                       xaxis_tickangle=45,
@@ -441,6 +439,9 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                              connectgaps=False,
                              )
                   )
+
+    yaxis_tickvals = [0, 20, 40, 60, 80, 90, 100]
+    yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 100],
                       uirevision=True,  # stay zoomed in with an update
                       autosize=False,
@@ -450,6 +451,10 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                       margin_r=20,
                       modebar_orientation="v",
                       template='plotly_white',
+                      yaxis_ticks="outside",
+                      yaxis_tickmode="array",
+                      yaxis_tickvals=yaxis_tickvals,
+                      yaxis_ticktext=yaxis_ticktext,
                       )
     fig.update_xaxes(showgrid=False)
 
@@ -573,8 +578,6 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
                       uirevision=True,
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Wind speed [km/h]',
                       xaxis_tickangle=45,
@@ -643,11 +646,8 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     dict = {
         'data': [{'x': new_timestamps, 'y': new_bright}],
         'layout': {
-            #'title': f'brightness in the Last {time_range} Hours',
             'xaxis': {'tickangle': 45},
             'yaxis': {'title': 'Brightness [lux]'},
-            #'width': 620,
-            #'height': 400,
             'autosize': False,
             'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',
