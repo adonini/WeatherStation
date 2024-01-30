@@ -15,7 +15,8 @@ from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
-from waitress import serve
+import os
+from dotenv import load_dotenv
 import uuid
 import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
@@ -30,6 +31,12 @@ from navbar import navbar_menu
 
 
 matplotlib.use('Agg')
+load_dotenv('../.env')
+log_path = os.environ.get('DASH_LOG_PATH')
+db_host = os.environ.get('DB_HOST', 'localhost')
+db_port = os.environ.get('DB_PORT')
+db_name = os.environ.get('DB_NAME')
+db_coll = os.environ.get('DB_COLL')
 
 #---------------------------------------------------------------------------#
 # Initialize the main logger
@@ -51,10 +58,9 @@ logger.addHandler(file_handler)
 # Connect to MongoDB
 #---------------------------------------------------------------------------#
 try:
-    client = MongoClient("mongodb://127.0.0.1:27010")
-    # WHAT IF CAN NOT CONNECT TO MONGO?????
-    mydb = client["WS"]
-    collection = mydb["Readings"]
+    client = MongoClient("mongodb://" + db_host + ":" + db_port)
+    mydb = client[db_name]
+    collection = mydb[db_coll]
 except Exception:
     logger.exception("Failed to connect to MongoDB.")
 
@@ -430,7 +436,6 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
 
     # Create the figure
     fig = go.Figure()
-# aggiungere che se il valor di hum e NaN allora viene scartato assieme al timestamp per quella entry
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_hums,
                              name='Humidity',
                              hoveron='points',
