@@ -1,12 +1,15 @@
 import logging
-#import time
-#from pathlib import Path
 import json
 from asyncua import Client
-#import asyncio
+from dotenv import load_dotenv
+import os
 
 logger = logging.getLogger('main.asyncua')
 #logger.setLevel(logging.DEBUG)
+
+# Load environment variables from the .env file in the root directory
+load_dotenv()
+dps_path = os.environ.get('DPS_PATH', './')
 
 
 class SubHandler(object):
@@ -25,19 +28,19 @@ class OPCUAConnection():
     def __init__(self):
         self.listOfWSNode = []
         self.WSDPValues = {}
-        # dps = Path("DPS.json").is_file()
-        with open("DPS.json", mode="r") as dpsFile:
+        host = os.environ.get('OPCUA_HOST', 'localhost')
+        port = os.environ.get('OPCUA_PORT')
+        self.url = "opc.tcp://" + host + ":" + port
+        with open(dps_path + "DPS.json", mode="r") as dpsFile:
             dpsDict = json.load(dpsFile)
             self.dpsList = dpsDict["Elements"]
-            opcuaChar = dpsDict["OPCUA"]
             dpsFile.close()
-            self.url = "opc.tcp://" + opcuaChar["Host"] + ":" + opcuaChar["Port"]
 
     async def connectANDread(self):
         #start_time = time.time()
         try:
             async with Client(url=self.url) as client:
-                #logger.debug('Connected to ', self.url)
+                logger.debug('Connected to ', self.url)
                 while True:
                     for element in self.dpsList:
                         node = "ns=" + element["NS"] + ";s=" + element["Name"]
@@ -47,7 +50,6 @@ class OPCUAConnection():
                     logger.debug("Reading all values")
                     #read_start_time = time.time()
                     for nid in self.listOfWSNode:
-                        #print("Reading node: ", nid)
                         try:
                             var = await nid.read_value()
                             # create more readable name
@@ -75,12 +77,11 @@ class OPCUAConnection():
                                     logger.error(f"Couldn't read node {nid}. Not possible to have timestamp, so avoid entering it to the DB.")
                                     return {}
                                 self.WSDPValues[nid.nodeid.to_string().rpartition('.')[2][:-2].replace("_", " ")] = None
-                            # if date or time value are not readable exit
                     #read_end_time = time.time()
                     #logger.debug(f"Reading values took {read_end_time - read_start_time} seconds")
                     #end_time = time.time()
                     #logger.debug(f"Total elapsed time: {end_time - start_time} seconds")
-                    print("Set of WS data: ", self.WSDPValues)
+                    #logger.debug("Set of WS data: ", self.WSDPValues)
                     return self.WSDPValues
         except KeyboardInterrupt:
             # Handle Ctrl+C (KeyboardInterrupt)
@@ -88,49 +89,3 @@ class OPCUAConnection():
             client.disconnect()
         except Exception as e:
             logger.error(f"Can not connect to OPCUA. Error: {e}")
-
-
-# async def dict_format(keys, values):
-#     return dict(zip(keys, values))
-
-
-# async def connect_client(url="opc.tcp://localhost:48042/"):
-#     try:
-#         client = Client(url=url)
-#         await client.connect()
-#         logger.info("Connected to WS OPC UA server")
-#     except Exception:
-#         logger.exception('Unable to connect to WS OPC UA server')
-
-# async def get_all_variables(url="opc.tcp://localhost:48042/"):
-#     async with Client(url=url) as client:
-#         doc = {}  # create a new MongoDB document dict
-#         for i in data_variables.items():
-#                 # Get the variable node for read / write
-#                 myvar = await client.nodes.root.get_child(["0:Objects", "{}:vPLC".format(idx), "{}:{}".format(idx,data_variables[i])])
-#                 val = await myvar.get_value()
-#                 doc.update({str(i): val})
-
-
-# async def get_all_values(url="opc.tcp://localhost:48041/"):
-#     async with Client(url=url) as client:
-#         data_list = []
-#         namespace = "mynamespace"
-#         idx = await client.get_namespace_index(namespace)
-#         for i in range(len(data_variables)):
-#             # Get the variable node for read / write
-#             myvar = await client.nodes.root.get_child(["0:Objects", "{}:vPLC".format(idx), "{}:{}".format(idx, data_variables[i])])  #vPLC is the Object name
-#             val = await myvar.get_value()
-#             data_list.append(val)
-#         print(await dict_format(data_variables, data_list))
-#         await asyncio.sleep(5)
-#         #return dict_format(data_variables, data_list)
-
-
-# async def read_values(self, nodes):
-
-#         Read the value of multiple nodes in one ua call.
-
-#         nodeids = [node.nodeid for node in nodes]
-#         results = await self.uaclient.read_attributes(nodeids, ua.AttributeIds.Value)
-#         return [result.Value.Value for result in results]
