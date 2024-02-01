@@ -1,8 +1,8 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from utils_modal import info_body
-from configurations import config, time_options, content_style
-from utils_functions import make_card_grid, speed_labels
+from configurations import config, time_options
+from utils_functions import speed_labels
 import numpy as np
 
 
@@ -115,36 +115,32 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
         size="md",
         color="primary",
         delay_show=1000,
-        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "99%", "height": "100%"}, config=config)]),  # width and height to 100% of the parent element
+        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "98%", "height": "100%", "padding": 0}, config=config)]),  # width and height to 100% of the parent element
         #id=f"{graph_id}-loading",
     )
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
-            dbc.CardBody(body, style={"width": "100%", "padding": 0}),  # "maxHeight": 500,
+            dbc.CardBody(body, style={"width": "100%", "padding": 0}),
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
-        className="dbc m-2 shadow",
-        style={"minWidth": "28rem"}  # "maxHeight": "36rem"},
+        className="border rounded p-0 col-cards-2",
     )
 
 
-cards = [
+######################
+# # Define content
+######################
+content = dbc.Row([
     make_plot_card("Wind Speed", "wind_hour_choice", "wind-graph", "wind-timestamp"),
     make_plot_card("Humidity", "hum_hour_choice", "humidity-graph", "hum-timestamp"),
     make_plot_card("Temperature", "temp_hour_choice", "temp-graph", "temp-timestamp"),
     make_plot_card("Wind Rose", "windrose_hour_choice", "wind-rose", "windrose-timestamp"),
     make_plot_card("Global Radiation", "rad_hour_choice", "radiation-graph", "rad-timestamp"),
     make_plot_card("Brightness", "brightness_hour_choice", "brightness-graph", "brightness-timestamp"),
-]
-
-######################
-# # Define content
-######################
-content = html.Div(children=[
-    html.Div(dbc.Col(make_card_grid(cards))),
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
-], className="p-2", style=content_style)
+], className="justify-content-around p-2")
+
 
 ##################
 # Wind rose definition for the callback

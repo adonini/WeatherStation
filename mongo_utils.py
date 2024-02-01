@@ -1,12 +1,16 @@
 from pymongo import MongoClient
 import logging
 import pymongo
-#import time
 from datetime import datetime
 from bson.objectid import ObjectId
+from dotenv import load_dotenv
+import os
 
 logger = logging.getLogger('main.mongo')
 #logger.setLevel(logging.DEBUG)
+
+# Load environment variables from the .env file in the root directory
+load_dotenv()
 
 
 class MongoDB:
@@ -19,9 +23,12 @@ class MongoDB:
     database = None
     parameters_col = None
     measurements_col = None
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT')
+    db_name = os.environ.get('DB_NAME')
+    uri = 'mongodb://' + db_host + ':' + db_port
 
-    #def __init__(self, uri='mongodb://127.0.0.1:27017/', dbName='WeatherStation', parameters='parameters', measurements='measurements'):
-    def __init__(self, uri='mongodb://localhost:27010/', dbName='WS', parameters='Header', measurements='Readings'):
+    def __init__(self, uri=uri, dbName=db_name, parameters='Header', measurements='Readings'):
         """
         Constructor; initializes defaults.
         Args:
@@ -32,10 +39,8 @@ class MongoDB:
         """
         try:
             self.client = MongoClient(uri)
-            #print("Connected to MongoDB")
-            logger.info('### Connected to MongoDB')  # {my_db} and collection {col}')
+            logger.info('### Connected to MongoDB')
         except Exception as err:
-            #print("Could not connect to MongoDB: %s" % err)
             logger.error(f'Could not connect to MongoDB: {err}')
 
         self.database = self.client[dbName]
@@ -66,7 +71,6 @@ class MongoDB:
             #col = my_db[dbCollection]
             logger.info('### Connected to MongoDB')
         except Exception as err:
-            #print("Could not connect to MongoDB: %s" % err)
             logger.error(f'Could not connect to MongoDB: {err}')
 
     def add_parameter(self, parameter, description, units):
@@ -99,13 +103,10 @@ class MongoDB:
         Args:
             dic: Dictionary containing the pair parameter/measurement of each register.
         """
-        #print('dic: ', dic)
         data = {}
         for key, value in dic.items():
-            #print(key, value)
             if key not in self.parameters:
-                #print(f"Parameter {key} cannot be found!")
-                logger.error(f'## Parameter {key} cannot be found!')
+                logger.error(f'### Parameter {key} cannot be found!')
                 return None
             _id = ObjectId(self.parameters[key]['_id'])
             data.update({
@@ -122,8 +123,9 @@ class MongoDB:
         # push to DB
         try:
             self.measurements_col.insert_one(data)
+            logger.info("### Values added to MongoDB")
         except Exception:
-            logger.error(f'## Failed to add entry to the DB: {data}')
+            logger.error(f'### Failed to add entry to the DB: {data}')
 
     def close_connection(self):
         """

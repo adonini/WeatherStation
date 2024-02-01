@@ -5,8 +5,14 @@ location_lst = [28.7666636, -17.8833298, 2200]  # lat, long, elevation
 config = {
     'displaylogo': False,  # remove plotly logo
     'modeBarButtonsToRemove': ['resetScale', 'lasso2d', 'select2d'],
-    'toImageButtonOptions': {'height': None, 'width': None},  # download image at the currently-rendered size
+    'toImageButtonOptions': {'format': 'png',
+                             'filename': 'LST1_WS_plot',
+                             'height': None,  # download image at the currently-rendered size
+                             'width': None,
+                             'scale': 1  # Multiply title/legend/axis/canvas sizes by this factor
+                             }
 }
+
 
 # time options for the dropdown menu in the content plots
 time_options = [{'label': '1 Hour', 'value': 1},
@@ -15,17 +21,6 @@ time_options = [{'label': '1 Hour', 'value': 1},
                 {'label': '12 Hours', 'value': 12},
                 {'label': '24 Hours', 'value': 24},
                 {'label': '48 Hours', 'value': 48}]
-
-# content page style
-content_style = {
-    #"margin-left": "2%",
-    #"margin-right": "-2 rem",
-    #"padding": "2rem 1rem",
-    "min-width": "600px",
-    #"overflow": "scroll",
-    #"flex-grow": "1",
-    "z-index": "5",
-}
 
 # sidebar style
 sidebar_style = {

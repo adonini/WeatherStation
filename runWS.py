@@ -1,4 +1,3 @@
-import time
 from datetime import time as t
 import asyncio
 import logging
@@ -6,6 +5,12 @@ from logging.handlers import TimedRotatingFileHandler
 from mongo_utils import MongoDB
 from opcua_utils import OPCUAConnection
 import signal
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file in the root directory
+load_dotenv()
+log_path = os.environ.get('OPCUA_LOG_PATH')
 
 #---------------------------------------------------------------------------#
 # Initialize the main logger
@@ -19,14 +24,11 @@ file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/WS.log', w
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
-#print(file_handler.baseFilename)
-#print(file_handler.rolloverAt)
 
 
 async def main():
     try:
         while True:
-            # Connect to OPC UA server as client and get the values
             #start_ws = time.perf_counter()
             ws = OPCUAConnection()
             data = await ws.connectANDread()

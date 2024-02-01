@@ -15,7 +15,8 @@ from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
-from waitress import serve
+import os
+from dotenv import load_dotenv
 import uuid
 import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
@@ -30,6 +31,12 @@ from navbar import navbar_menu
 
 
 matplotlib.use('Agg')
+load_dotenv('../.env')
+log_path = os.environ.get('DASH_LOG_PATH')
+db_host = os.environ.get('DB_HOST', 'localhost')
+db_port = os.environ.get('DB_PORT')
+db_name = os.environ.get('DB_NAME')
+db_coll = os.environ.get('DB_COLL')
 
 #---------------------------------------------------------------------------#
 # Initialize the main logger
@@ -51,10 +58,9 @@ logger.addHandler(file_handler)
 # Connect to MongoDB
 #---------------------------------------------------------------------------#
 try:
-    client = MongoClient("mongodb://127.0.0.1:27010")
-    # WHAT IF CAN NOT CONNECT TO MONGO?????
-    mydb = client["WS"]
-    collection = mydb["Readings"]
+    client = MongoClient("mongodb://" + db_host + ":" + db_port)
+    mydb = client[db_name]
+    collection = mydb[db_coll]
 except Exception:
     logger.exception("Failed to connect to MongoDB.")
 
@@ -82,14 +88,13 @@ app.layout = html.Div([
     ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
     html.Hr(),
     dbc.Row([
-        html.Div(sidebar, className="col-xl-3 col-lg-4 col-md-4 col-sm-12 col-12 m-0 ps-0"),
-        dbc.Row(dbc.Col([
+        dbc.Col(sidebar, className="col-12 col-s p-0"),
+        dbc.Col([
             html.Div(id="red-alert",
-                     style={"background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
+                     style={"margin-bottom": "5px", "background-color": "red", "color": "white", "font-size": "28px", "text-align": "center", "padding": "10px", "height": "auto"},
                      hidden=True),  # Initially hidden, pops up only with non safe weather conditions
             content],
-            width={"size": 12},  # Allow the content to take available space in the row
-        ), className="justify-content-around col-xl-9 col-lg-8 col-md-8 col-sm-12 col-12"),
+            className="justify-content-around col-12 col-c"),
         dcc.Interval(
             id='interval-day-change',
             interval=24 * 60 * 60 * 1000,  # 1 day in milliseconds, maybe not needed this interval.
@@ -106,7 +111,7 @@ app.layout = html.Div([
             ])
         ])
     ])
-], className="container-fluid dbc dbc-ag-grid")
+], className="container-fluid dbc")
 
 
 ######################
@@ -371,15 +376,16 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                   )
     fig.update_layout(yaxis_range=[-30, 30],
                       uirevision=True,
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Temperature [°C]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
                       template='plotly_white',
-                      legend=dict(x=1, y=0.9),
+                      legend=dict(orientation="h", yanchor="bottom",
+                                  y=1.02, xanchor="right", x=1),
                       modebar_add=["hovercompare", "v1hovermode"],
+                      modebar_orientation="v",
                       )
     fig.update_xaxes(showgrid=False)
 
@@ -430,7 +436,6 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
 
     # Create the figure
     fig = go.Figure()
-# aggiungere che se il valor di hum e NaN allora viene scartato assieme al timestamp per quella entry
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_hums,
                              name='Humidity',
                              hoveron='points',
@@ -439,15 +444,22 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                              connectgaps=False,
                              )
                   )
+
+    yaxis_tickvals = [0, 20, 40, 60, 80, 90, 100]
+    yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 100],
                       uirevision=True,  # stay zoomed in with an update
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Humidity [%]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
+                      modebar_orientation="v",
                       template='plotly_white',
+                      yaxis_ticks="outside",
+                      yaxis_tickmode="array",
+                      yaxis_tickvals=yaxis_tickvals,
+                      yaxis_ticktext=yaxis_ticktext,
                       )
     fig.update_xaxes(showgrid=False)
 
@@ -571,15 +583,16 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
                       uirevision=True,
-                      #width=620,
-                      #height=400,
                       autosize=False,
                       yaxis_title='Wind speed [km/h]',
                       xaxis_tickangle=45,
-                      margin_t=2,
+                      margin_t=20,
+                      margin_r=20,
                       template='plotly_white',
                       modebar_add=["hovercompare", "v1hovermode"],
-                      legend=dict(x=1, y=0.9),
+                      modebar_orientation="v",
+                      legend=dict(orientation="h", yanchor="bottom",
+                                  y=1.02, xanchor="right", x=1),
                       yaxis_ticks="outside",
                       yaxis_tickmode="array",
                       yaxis_tickvals=yaxis_tickvals,
@@ -638,19 +651,17 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     dict = {
         'data': [{'x': new_timestamps, 'y': new_bright}],
         'layout': {
-            #'title': f'brightness in the Last {time_range} Hours',
             'xaxis': {'tickangle': 45},
             'yaxis': {'title': 'Brightness [lux]'},
-            #'width': 620,
-            #'height': 400,
             'autosize': False,
-            'margin': {'t': 2},
+            'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',
         }
     }
     fig = go.Figure(dict)
     fig.update_layout(yaxis_range=[0, 160000],
                       uirevision=True,
+                      modebar_orientation="v",
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
@@ -748,7 +759,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
-        margin=dict(l=25, r=0, t=20, b=20),
+        margin=dict(l=35, r=0, t=20, b=20),
         uirevision=True,
         #polar=dict(radialaxis=dict(showticklabels=False)),
         polar_radialaxis_ticksuffix='%',
@@ -842,13 +853,14 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
             #'height': 400,
             'autosize': False,
             #"xaxis.autorange": True,
-            'margin': {'t': 2},
+            'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',
         }
     }
     fig = go.Figure(dict)
     fig.update_layout(yaxis_range=[0, 1300],
                       uirevision=True,
+                      modebar_orientation="v",
                       )
     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
     fig.update_xaxes(showgrid=False)
