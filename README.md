@@ -45,3 +45,11 @@ In the `utils` folder general scripts can be found.
 
 `lst-ws.sh` can be used to start, stop and check the status of the processes mentioned above.
 Use `lst-ws.sh -h` for the different options.
+
+the bash script `check_and_restart.sh` is run by a cronjob, to automatically restart the processes if down.
+
+The script `ORM_WSdata.py` creates a txt file which is then used to display LST weather station data in the ORM webpage.
+The txt file is moved to the webserver by the script `weather_monitor.sh`, which also checks that `ORM_WSdata.py` is running, and if not restarts it.
+A cronejob is responsable to run the `weather_monitor.sh` every 40sec.
+
+To be able to move the file to the webserver a ssh key for the user `lst-safetybroker` is needed.

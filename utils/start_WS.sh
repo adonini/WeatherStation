@@ -7,11 +7,10 @@ conda activate ws
 
 # Launch script in the background with nohup,  unbuffering the output
 echo "Lunching the WS client..."
-#sudo -u lst-safetybroker
-nohup python -u /opt/lst-safetybroker/bin/runWS.py > /dev/null 2>&1 &
+nohup python -u /opt/lst-safetybroker/bin/runWS.py 2>&1 >> /var/log/lst-safetybroker/WS/runWS.out &
 
 # Wait a few seconds for the process to start
-sleep 2
+sleep 10
 
 # Check if the process is running
 p=`ps aux | grep runWS.py | grep python`

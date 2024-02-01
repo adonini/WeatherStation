@@ -7,8 +7,7 @@ conda activate ws
 
 # Launch script in the background with nohup,  unbuffering the output
 echo "Lunching the WS application..."
-#sudo -u lst-safetybroker
-nohup python -u /opt/lst-safetybroker/bin/dashboard/app.py > /dev/null 2>&1 &
+nohup python -u /opt/lst-safetybroker/bin/dashboard/app.py 2>&1 >> /opt/lst-safetybroker/bin/dashboard/dashboard.out &
 
 # Wait a few seconds for the process to start
 sleep 2

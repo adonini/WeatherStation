@@ -1,9 +1,4 @@
 {
-     "OPCUA" :
-     {
-          "Host" : "localhost",
-          "Port" : "48041"
-     },
     "Elements": [
         {
             "NS": "2",
