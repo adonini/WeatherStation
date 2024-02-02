@@ -17,6 +17,7 @@ import astropy.units as u
 from astroplan import Observer
 import os
 from dotenv import load_dotenv
+from waitress import serve
 import uuid
 import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
@@ -45,8 +46,8 @@ db_coll = os.environ.get('DB_COLL')
 logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 12:00 UTC
-utc_time = time(12, 0, 0)
-file_handler = TimedRotatingFileHandler('/var/log/lst-safetybroker/WS/dashboard/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+utc_time = time(8, 0, 0)
+file_handler = TimedRotatingFileHandler(log_path + '/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 #file_handler = TimedRotatingFileHandler('./logs_dash/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 # Create formatter and add it to handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
