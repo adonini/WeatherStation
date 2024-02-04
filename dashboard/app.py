@@ -23,8 +23,10 @@ import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              combine_datetime, get_magic_values,
                              get_tng_dust_value, toggle_modal,
-                             get_value_or_nan, handle_data_gaps)
+                             get_value_or_nan, handle_data_gaps,
+                             play_alert_audio)
 from configurations import (location_lst, spd_colors_speed,
+                            precipitationtype_dict, alert_states_default,
                             rain_alert_timer, min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
 from content import content, dir_bins, dir_labels, spd_bins, spd_labels, alert_messages
@@ -81,6 +83,8 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 # Set the page layout
 ######################
 app.layout = html.Div([
+    dcc.Store(id='alert-store', data=alert_states_default),  # Store to keep alert states, initialized with the default one
+    dcc.Store(id='audio-triggers', data=[]),
     dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
     html.Div(id='hidden-audio', style={'display': 'none'}),  # to play the audio
     dbc.Row([
@@ -183,9 +187,15 @@ def update_sun(n_intervals):
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
                Output('red-alert', 'hidden'),
+               Output('red-alert', 'children'),
+               Output('alert-store', 'data'),
+               Output('audio-triggers', 'data'),
                Output('rain-store', 'data')],
+              [Input('interval-livevalues', 'n_intervals')],
+              [State('alert-store', 'data'),
                State('rain-store', 'data')])
 def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
+    alert_states = alert_states_store
     rain_alert_timer = rain_timer
     # Get the latest reading from the database
     time_now = datetime.utcnow()
@@ -330,10 +340,51 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
             if p_int > 0:
                 live_values[8] = create_list_group_item_alert("Rain Intensity", p_int, ' mm/h')
 
+    # Check if the alert state has changed to play alert sounds
+    audio_triggers = []  # List to store audio triggers
+    for alert_type, alert_condition in zip(['humidity', 'wind', 'rain', 'hum_rain', 'hum_wind', 'hum_wind_rain', 'wind_rain'],
+                                           [hum_alert, wind_alert, precip_alert, hum_alert and precip_alert,
+                                            hum_alert and wind_alert, wind_alert and precip_alert,
+                                            hum_alert and wind_alert and precip_alert]):  #NOTE: only wind alert, not gusts or wind_alert_combinations
+        if alert_condition and not alert_states[alert_type]['active']:  # Alert triggered first time, set  timestamp and play audio
+            alert_states[alert_type]['active'] = True
+            alert_states[alert_type]['timestamp'] = time_now.isoformat()
+            audio_triggers.append(alert_type)
+        elif not alert_condition and alert_states[alert_type]['active']:  # no alert anymore, reset alert state and timestamp
+            alert_states[alert_type]['active'] = False
+            alert_states[alert_type]['timestamp'] = None
+        elif alert_condition and alert_states[alert_type]['active']:  # Alert is still active, check if enough time has passed to play audio again
+            timestamp_datetime = datetime.strptime(alert_states[alert_type]['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
+            elapsed_time = (time_now - timestamp_datetime).total_seconds()
+            if elapsed_time >= min_alert_interval[alert_type]:
+                audio_triggers.append(alert_type)
+                # Update the initial timestamp to the current time to start counting from the current trigger
+                alert_states[alert_type]['timestamp'] = time_now.isoformat()
+
     return [live_values,
-            dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap"),
+            dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (time_now - timedelta(minutes=5)) else 'green', className="text-wrap"),
             not is_alert,
+            message,
+            alert_states,
+            audio_triggers,
             rain_alert_timer]
+
+
+# callback to play alert audio
+@app.callback([Output('hidden-audio', 'children')],
+              #Output('audio-triggers', 'data')],
+              [Input('audio-triggers', 'data')])
+def play_audio(audio_triggers):
+    try:
+        if not audio_triggers:
+            logger.info('No audio triggers. Skipping audio playback.')
+            return [None]
+        for alert_type in audio_triggers:
+            play_alert_audio(alert_type)
+        logger.info('Audio played successfully.')
+    except Exception as e:
+        logger.error(f'Error playing audio: {str(e)}')
+    return [None]
 
 
 # Define the callback function to update the temp graph

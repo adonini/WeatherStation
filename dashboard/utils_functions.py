@@ -5,9 +5,21 @@ from bs4 import BeautifulSoup
 import requests
 import xml.etree.ElementTree as ET
 import logging
-
+from pydub import AudioSegment
+from pydub.playback import play
 
 logger = logging.getLogger('app.functions')
+
+
+# Function to handle audio playback
+def play_alert_audio(alert_type):
+    audio_file = f"{alert_type}_audio.mp3"
+    audio = AudioSegment.from_file(f"audios/{audio_file}", format="mp3")
+    modified_audio = audio + 3
+    try:
+        play(modified_audio)
+    except Exception as e:
+        logger.error(f'Error in playing audio {audio_file}: {e}')
 
 
 # function to define the card grid of the main content

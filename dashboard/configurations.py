@@ -1,6 +1,30 @@
 # Set location for Roque de los Muchachos
 location_lst = [28.7666636, -17.8833298, 2200]  # lat, long, elevation
 
+
+# Dictionary to store the state of each alert and the timestamp when the alert was first triggered
+alert_states_default = {
+    'humidity': {'active': False, 'timestamp': None},
+    'rain': {'active': False, 'timestamp': None},
+    'wind': {'active': False, 'timestamp': None},
+    'hum_rain': {'active': False, 'timestamp': None},
+    'hum_wind': {'active': False, 'timestamp': None},
+    'wind_rain': {'active': False, 'timestamp': None},
+    'hum_wind_rain': {'active': False, 'timestamp': None},
+}
+
+# Minimum time interval between alerts to play audio again (in seconds)
+min_alert_interval = {
+    'humidity': 1200,  # 20 minutes
+    'rain': 1200,
+    'wind': 1200,
+    'hum_rain': 1200,
+    'hum_wind': 1200,
+    'wind_rain': 1200,
+    'hum_wind_rain': 1200,
+
+}
+
 # Dictionary for rain alert
 rain_alert_timer = {'active': False, 'start_time': None}
 
