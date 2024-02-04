@@ -1,6 +1,9 @@
 # Set location for Roque de los Muchachos
 location_lst = [28.7666636, -17.8833298, 2200]  # lat, long, elevation
 
+# Dictionary for rain alert
+rain_alert_timer = {'active': False, 'start_time': None}
+
 # plots configuration
 config = {
     'displaylogo': False,  # remove plotly logo

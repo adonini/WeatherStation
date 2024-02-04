@@ -25,7 +25,7 @@ from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              get_tng_dust_value, toggle_modal,
                              get_value_or_nan, handle_data_gaps)
 from configurations import (location_lst, spd_colors_speed,
-                            precipitationtype_dict)
+                            rain_alert_timer, min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
 from content import content, dir_bins, dir_labels, spd_bins, spd_labels, alert_messages
 from navbar import navbar_menu
@@ -81,6 +81,8 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 # Set the page layout
 ######################
 app.layout = html.Div([
+    dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
+    html.Div(id='hidden-audio', style={'display': 'none'}),  # to play the audio
     dbc.Row([
         dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
         dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
@@ -181,10 +183,12 @@ def update_sun(n_intervals):
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
                Output('red-alert', 'hidden'),
-               Output('red-alert', 'children')],
-              [Input('interval-livevalues', 'n_intervals')])
-def update_live_values(n_intervals, n=100):
+               Output('rain-store', 'data')],
+               State('rain-store', 'data')])
+def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
+    rain_alert_timer = rain_timer
     # Get the latest reading from the database
+    time_now = datetime.utcnow()
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
     cloud_value, tran9_value = get_magic_values()
     tng_dust_value = get_tng_dust_value()
@@ -243,15 +247,31 @@ def update_live_values(n_intervals, n=100):
     wind_alert = w10_speed >= 36
     precip_alert = p_int > 0
     strong_wind_alert = g_speed >= 85 or w10_speed >= 50
+    # Start or reset the rain alert timer, to be sure is not a fake alert
+    if precip_alert and not rain_alert_timer['active']:  # first time set alert to active and timer
+        rain_alert_timer['active'] = True
+        rain_alert_timer['start_time'] = time_now.isoformat()
+        precip_alert = False
+    elif not precip_alert:  # reset
+        rain_alert_timer['active'] = False
+        rain_alert_timer['start_time'] = None
+    elif precip_alert and rain_alert_timer['active']:  # Alert is still active, check if enough time has passed
+        timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f')
+        elapsed_time = (time_now - timestamp_datetime).total_seconds()
+        if elapsed_time >= 60:
+            precip_alert = True  # rain alert is a true one
+        else:
+            precip_alert = False  # rain alert is a fake, reset
 
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
-    if is_alert:
+    if is_alert:  # extra logging
         logger.info("One of the weather limits exceed the safety value. Alert is sent.")
         logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, hunidity: {hum}, rain: {p_int}")
+
+    # Determine the alert message displayed based on the combination of alerts
     wind_alert_combination = wind_alert or gust_alert
     combinations = [subset for subset in itertools.combinations([hum_alert, wind_alert_combination, precip_alert], 3)]
-    # Determine the message based on the combination of alerts
     message = alert_messages.get(tuple(combinations[0]), "Combination not found in alert messages")
 
     # Override any alert with "very strong wind" message
@@ -313,7 +333,7 @@ def update_live_values(n_intervals, n=100):
     return [live_values,
             dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (datetime.utcnow() - timedelta(minutes=5)) else 'green', className="text-wrap"),
             not is_alert,
-            message]
+            rain_alert_timer]
 
 
 # Define the callback function to update the temp graph
