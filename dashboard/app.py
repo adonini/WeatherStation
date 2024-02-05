@@ -164,7 +164,7 @@ def update_moon(n_intervals):
     return f"{moon_illumination:>{data_formatter}} %", moon_rise_time, moon_set_time
 
 
-# Function to update sunrise, sunset and moon data every day
+# update sunrise, sunset and moon data every day
 @app.callback(
     [Output('sunrise-time', 'children'),
      Output('sunset-time', 'children')],
@@ -183,7 +183,7 @@ def update_sun(n_intervals):
         return 'n/a', 'n/a'
 
 
-# Define a function to update the live values every 20 seconds (depends from the interval)
+# update the live values every 20 seconds (depends from the interval)
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
                Output('red-alert', 'hidden'),
@@ -262,22 +262,25 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
         rain_alert_timer['active'] = True
         rain_alert_timer['start_time'] = time_now.isoformat()
         precip_alert = False
+        logger.info('Rain detected, starting timer.')
     elif not precip_alert:  # reset
         rain_alert_timer['active'] = False
         rain_alert_timer['start_time'] = None
+        logger.info('Rain stopped, resetting timer.')
     elif precip_alert and rain_alert_timer['active']:  # Alert is still active, check if enough time has passed
         timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f')
         elapsed_time = (time_now - timestamp_datetime).total_seconds()
         if elapsed_time >= 60:
             precip_alert = True  # rain alert is a true one
+            logger.info('Sending out rain alert after 60sec.')
         else:
-            precip_alert = False  # rain alert is a fake, reset
+            precip_alert = False  # wait to send alert
 
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
     if is_alert:  # extra logging
         logger.info("One of the weather limits exceed the safety value. Alert is sent.")
-        logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, hunidity: {hum}, rain: {p_int}")
+        logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, humidity: {hum}, rain: {p_int}")
 
     # Determine the alert message displayed based on the combination of alerts
     wind_alert_combination = wind_alert or gust_alert
@@ -350,6 +353,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
             alert_states[alert_type]['active'] = True
             alert_states[alert_type]['timestamp'] = time_now.isoformat()
             audio_triggers.append(alert_type)
+            logger.info(f'{alert_type} alert triggered, adding audio message.')
         elif not alert_condition and alert_states[alert_type]['active']:  # no alert anymore, reset alert state and timestamp
             alert_states[alert_type]['active'] = False
             alert_states[alert_type]['timestamp'] = None
@@ -360,7 +364,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
                 audio_triggers.append(alert_type)
                 # Update the initial timestamp to the current time to start counting from the current trigger
                 alert_states[alert_type]['timestamp'] = time_now.isoformat()
-
+                logger.info(f'{alert_type} audio alert added again after waiting time.')
     return [live_values,
             dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (time_now - timedelta(minutes=5)) else 'green', className="text-wrap"),
             not is_alert,
@@ -372,7 +376,6 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
 
 # callback to play alert audio
 @app.callback([Output('hidden-audio', 'children')],
-              #Output('audio-triggers', 'data')],
               [Input('audio-triggers', 'data')])
 def play_audio(audio_triggers):
     try:
@@ -381,13 +384,13 @@ def play_audio(audio_triggers):
             return [None]
         for alert_type in audio_triggers:
             play_alert_audio(alert_type)
-        logger.info('Audio played successfully.')
+        logger.info(f'Audio {alert_type} played successfully.')
     except Exception as e:
-        logger.error(f'Error playing audio: {str(e)}')
+        logger.error(f'Error playing audio {alert_type}: {str(e)}')
     return [None]
 
 
-# Define the callback function to update the temp graph
+# callback  to update the temp graph
 @app.callback([Output('temp-graph', 'figure'),
                Output('temp-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
@@ -403,7 +406,6 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
         'Date.value': 1,
         '_id': 0
     }
-    # Query the data from the database
     data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
                                 projection, sort=[('added', pymongo.DESCENDING)]))
 
@@ -424,18 +426,15 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
     timestamps = combine_datetime(date_time)
 
-    # correct for data missing for >2min so that no line in connecting the dots in that case
+    # correct for data missing for >2min so that no line in connecting the dots is shown in that case
     new_timestamps, new_temps, new_dews = handle_data_gaps(timestamps, temps, dews)
 
-    # Create the figure
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_temps,
                              name='Temperature',
                              line_color="#316395",
                              hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
-                             connectgaps=False,
-                             )
-                  )
+                             connectgaps=False))
 
     # Add dew-point temp to the plot
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_dews,
@@ -470,7 +469,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
-# Define the callback function to update the humidity graph
+# callback to update the humidity graph
 @app.callback([Output('humidity-graph', 'figure'),
                Output('hum-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
@@ -506,7 +505,6 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     # correct for data missing for >2min so that no line in connecting the dots in that case
     new_timestamps, new_hums = handle_data_gaps(timestamps, hums)
 
-    # Create the figure
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_hums,
                              name='Humidity',
@@ -551,7 +549,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
-# Define the callback function to update the wind graph
+# callback to update the wind graph
 @app.callback([Output('wind-graph', 'figure'),
                Output('wind-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
@@ -580,7 +578,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
             # Retrieve all the data starting from the latest data
             data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
                                         projection, sort=[('added', pymongo.DESCENDING)]))
-    # Create the figure
+
     fig = go.Figure()
 
     # Get the most recent value
@@ -589,7 +587,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     latest_gdata = data[0]['Max Wind']['value']
     # Get the wind and gusts values
     w_speed = [d.get('Average Wind Speed', {}).get('value') for d in data]
-    w10_speed = [d.get('Mean 10 Wind Speed', {}).get('value') for d in data]  # [d['Mean 10 Wind Speed']['value'] for d in data]
+    w10_speed = [d.get('Mean 10 Wind Speed', {}).get('value') for d in data]
     g_speed = [d.get('Max Wind', {}).get('value') for d in data]
     # Get the timestamps of the WS
     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
@@ -599,24 +597,15 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     new_timestamps, new_w_speed, new_w10_speed, new_g_speed = handle_data_gaps(timestamps, w_speed, w10_speed, g_speed)
 
     # Wind 1' trace
-    #if latest_wdata is not None:
     w_name = "Wind 1' Avg"
-    # if latest_wdata >= 50:
-    #     w_name = '<span style="color:red">&#x26a0; Wind speed</span>'
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_w_speed,
                              name=w_name,
                              hoveron='points',
                              line_color="#316395",
                              hovertemplate=("%{x}<br>" + "Wind 1' Avg: %{y:.2f} km/h <br><extra></extra> "),
-                             connectgaps=False,
-                             )
-                  )
-    # Change wind graph color if above limit
-    # if latest_wdata >= 50:
-    #     fig.update_traces(fill='tozeroy', fillcolor='rgba(255,127,14,0.1)', line_color='#ff7f0e', opacity=0.1, selector=({'name': w_name}))
+                             connectgaps=False))
 
     # Gust trace
-    #if latest_gdata is not None:
     g_name = 'Wind Gusts'
     if latest_gdata >= 60:
         g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
@@ -635,7 +624,6 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
         # fill='tozeroy' = fill down to xaxis
 
     # Wind 10' trace
-    #if latest_w10data is not None:
     w10_name = "Wind 10' Avg"
     if latest_w10data >= 36:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
@@ -681,7 +669,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
-# Define the callback function to update the brightness graph
+# callback to update the brightness graph
 @app.callback([Output('brightness-graph', 'figure'),
                Output('brightness-timestamp', 'children')],
               [Input('interval-component', 'n_intervals'),
@@ -720,16 +708,13 @@ def update_brightness_graph(n_intervals, time_range, refresh_clicks):
     new_timestamps, new_bright = handle_data_gaps(timestamps, bright)
 
     # Create the figure
-    dict = {
-        'data': [{'x': new_timestamps, 'y': new_bright}],
-        'layout': {
-            'xaxis': {'tickangle': 45},
-            'yaxis': {'title': 'Brightness [lux]'},
-            'autosize': False,
-            'margin': {'t': 20, 'r': 20},
-            'template': 'plotly_white',
-        }
-    }
+    dict = {'data': [{'x': new_timestamps, 'y': new_bright}],
+            'layout': {
+                'xaxis': {'tickangle': 45},
+                'yaxis': {'title': 'Brightness [lux]'},
+                'autosize': False,
+                'margin': {'t': 20, 'r': 20},
+                'template': 'plotly_white'}}
     fig = go.Figure(dict)
     fig.update_layout(yaxis_range=[0, 160000],
                       uirevision=True,
