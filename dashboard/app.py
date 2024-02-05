@@ -313,7 +313,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
         create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
     ]
 
-    if timestamps > (datetime.utcnow() - timedelta(minutes=5)):
+    if timestamps > (time_now - timedelta(minutes=2)):
         # Check humidity and change the background color accordingly
         if hum != 'n/a':
             if hum >= 90:
@@ -366,7 +366,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
                 alert_states[alert_type]['timestamp'] = time_now.isoformat()
                 logger.info(f'{alert_type} audio alert added again after waiting time.')
     return [live_values,
-            dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (time_now - timedelta(minutes=5)) else 'green', className="text-wrap"),
+            dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (time_now - timedelta(minutes=2)) else 'green', className="text-wrap"),
             not is_alert,
             message,
             alert_states,
