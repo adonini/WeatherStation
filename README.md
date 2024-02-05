@@ -5,7 +5,7 @@ Scripts to read data from the WS sensor, upload them to a MongoDB and then displ
 MongoDB is installed with Docker and is used to store the data read from the Weather Station.
 The instance of mongodb is forwarded (port 27010) to host machine, so that it can be used from outside of the Docker environment.
 
-The script `runWS.py` pulls the data from OPCUA server every 5 seconds and fills the MongoDB.
+The script `runWS.py` pulls the data from OPCUA server every 10 seconds and fills the MongoDB.
 
 A dash application `app.py` reads the weather data from MongoDB and displays them.
 
@@ -36,8 +36,8 @@ If you want to kill one of the script, find the process ID with the command abov
 
 ## Logs
 
-Logs are saved in `/var/log/lst-safetybroker/WS/` for the data script and `/var/log/lst-safetybroker/WS/dashboard/` for the dashboard.
-A new file is created everyday at 12:00 UTC and only the log file up to 7 days are kept. Older files are automatically removed.
+The path for logs has to be specified in the `.env` file`.
+A new file is created everyday at 08:00 UTC and only the log file up to 7 days are kept. Older files are automatically removed.
 
 ## Scripts
 
