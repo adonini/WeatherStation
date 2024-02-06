@@ -8,11 +8,11 @@ is_process_running() {
 # Check and restart the first script
 if ! is_process_running "runWS.py"; then
     #echo "runWS.py is not running. Restarting..."
-    /opt/lst-safetybroker/bin/start_WS.sh
+    /.../start_WS.sh
 fi
 
 # Check and restart the second script
 if ! is_process_running "app.py"; then
     #echo "app.py is not running. Restarting..."
-    /opt/lst-safetybroker/bin/start_WSdashboard.sh
+    /.../start_WSdashboard.sh
 fi

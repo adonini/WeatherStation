@@ -65,7 +65,7 @@ case "$1" in
     ##############################    WS DB ACTIONS    ##################################
     start_WS_DB)
         echo "Starting WS DB docker container..."
-        docker-compose -f /opt/lst-safetybroker/bin/docker_compose_mongo.yaml up -d
+        docker-compose -f /.../docker_compose_mongo.yaml up -d
         sleep 3
         data=$(docker ps | grep mongodb-WS)
         if [ $(echo $data | wc -l ) -eq 1 ]; then
@@ -77,7 +77,7 @@ case "$1" in
         ;;
     stop_WS_DB)
         echo "Stopping WS DB docker container..."
-        docker-compose -f /opt/lst-safetybroker/bin/docker_compose_mongo.yaml down
+        docker-compose -f /.../docker_compose_mongo.yaml down
         sleep 3
         data=$(docker ps | grep mongodb-WS)
         if [ $(echo $data | wc -l ) -eq 0 ]; then
@@ -107,14 +107,11 @@ case "$1" in
         fi
         exit
         ;;
-        # docker-compose -f /opt/lst-safetybroker/bin/docker_compose_mongo.yaml ps
-        # exit
-        # ;;
 
     #############################    WS DATA SCRIPT    ##############################
     start_WS_client)
         #echo "Starting the WS client"
-        source /opt/lst-safetybroker/bin/start_WS.sh
+        source /.../start_WS.sh
         sleep 1
         exit
         ;;
@@ -140,7 +137,7 @@ case "$1" in
     #############################    WS DASHBOARD    ##############################
     start_dashboard)
         #echo "Starting the WS dashboard"
-        source /opt/lst-safetybroker/bin/start_WSdashboard.sh
+        source /.../start_WSdashboard.sh
         sleep 1
         exit
         ;;

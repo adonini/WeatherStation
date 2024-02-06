@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # Initialize Conda and Activate Conda environment for WS
-CONDA_INIT_SCRIPT="/opt/lst-safetybroker/conda/conda_init.sh"
+CONDA_INIT_SCRIPT="/.../conda/conda_init.sh"
 source "$CONDA_INIT_SCRIPT"
 conda activate ws
 
 # Launch script in the background with nohup,  unbuffering the output
 echo "Lunching the WS client..."
-nohup python -u /opt/lst-safetybroker/bin/runWS.py 2>&1 >> /var/log/lst-safetybroker/WS/runWS.out &
+nohup python -u /.../runWS.py 2>&1 >> /.../runWS.out &
 
 # Wait a few seconds for the process to start
 sleep 10

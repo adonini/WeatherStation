@@ -7,7 +7,6 @@ from opcua_utils import OPCUAConnection
 async def main():
     while True:
         # Connect to OPC UA server as client and get the values
-        #start_ws = time.perf_counter()
         ws = OPCUAConnection()
         data = await ws.connectANDread()
 
@@ -28,12 +27,10 @@ async def main():
                 f"</fitsheader>"
 
             # Write the text content to a file
-            #print("Writing to file")
             with open("WS10.txt", "w") as file:
                 file.write(text_content)
 
-            # sleep 15s before next pulling
-            #print("Sleeping 50sec")
+            # sleep 50s before next pulling
             time.sleep(50)
 
 

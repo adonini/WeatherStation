@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CONDA_INIT_SCRIPT="/opt/lst-safetybroker/conda/conda_init.sh"
+CONDA_INIT_SCRIPT="/.../conda/conda_init.sh"
 
 # Check if Conda init script exists
 if [ ! -f "$CONDA_INIT_SCRIPT" ]; then
@@ -12,7 +12,7 @@ fi
 source "$CONDA_INIT_SCRIPT"
 
 # Path to environment.yml file
-ENV_FILE="/opt/lst-safetybroker/bin/environment.yml"
+ENV_FILE="/.../environment.yml"
 
 # Check if environment.yml file exists
 if [ ! -f "$ENV_FILE" ]; then
