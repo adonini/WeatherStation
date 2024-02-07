@@ -23,8 +23,7 @@ import itertools
 from utils_functions import (convert_meteorological_deg2cardinal_dir,
                              combine_datetime, get_magic_values,
                              get_tng_dust_value, toggle_modal,
-                             get_value_or_nan, handle_data_gaps,
-                             play_alert_audio)
+                             get_value_or_nan, handle_data_gaps)
 from configurations import (location_lst, spd_colors_speed,
                             precipitationtype_dict, alert_states_default,
                             rain_alert_timer, min_alert_interval)
@@ -44,13 +43,11 @@ db_coll = os.environ.get('DB_COLL')
 #---------------------------------------------------------------------------#
 # Initialize the main logger
 #---------------------------------------------------------------------------#
-# Create a custom logger
 logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
-# Create handler: new file every day at 12:00 UTC
+# Create handler: new file every day at 08:00 UTC
 utc_time = time(8, 0, 0)
 file_handler = TimedRotatingFileHandler(log_path + '/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
-#file_handler = TimedRotatingFileHandler('./logs_dash/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 # Create formatter and add it to handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
@@ -75,8 +72,8 @@ server = flask.Flask(__name__)
 app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=True, title='LST-1 Weather Station',
                 external_stylesheets=[dbc.themes.SANDSTONE, FONT_AWESOME, dbc.icons.BOOTSTRAP, dbc.icons.FONT_AWESOME],
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.5, minimum-scale=0.5'},
-                           {'http-equiv': 'refresh', 'content': '840'}],  # automatic refresh of the html page every 14min to avoid stalling in case server is down
-                )
+                           #{'http-equiv': 'refresh', 'content': '840'}],  # automatic refresh of the html page every 14min to avoid stalling in case server is down
+                ])
 
 
 ######################
@@ -86,7 +83,7 @@ app.layout = html.Div([
     dcc.Store(id='alert-store', data=alert_states_default),  # Store to keep alert states, initialized with the default one
     dcc.Store(id='audio-triggers', data=[]),
     dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
-    html.Div(id='hidden-audio', style={'display': 'none'}),  # to play the audio
+    html.Audio(id='audio-element', controls=False, autoPlay=True, style={'display': 'none'}),
     dbc.Row([
         dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
         dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
@@ -345,14 +342,14 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
 
     # Check if the alert state has changed to play alert sounds
     audio_triggers = []  # List to store audio triggers
-    for alert_type, alert_condition in zip(['humidity', 'wind', 'rain', 'hum_rain', 'hum_wind', 'hum_wind_rain', 'wind_rain'],
-                                           [hum_alert, wind_alert, precip_alert, hum_alert and precip_alert,
-                                            hum_alert and wind_alert, wind_alert and precip_alert,
-                                            hum_alert and wind_alert and precip_alert]):  #NOTE: only wind alert, not gusts or wind_alert_combinations
+    new = False
+    for alert_type, alert_condition in zip(['humidity', 'wind', 'rain'],
+                                           [hum_alert, wind_alert_combination, precip_alert]):  #NOTE: only wind alert, not gusts or wind_alert_combinations
         if alert_condition and not alert_states[alert_type]['active']:  # Alert triggered first time, set  timestamp and play audio
             alert_states[alert_type]['active'] = True
             alert_states[alert_type]['timestamp'] = time_now.isoformat()
             audio_triggers.append(alert_type)
+            new = True
             logger.info(f'{alert_type} alert triggered, adding audio message.')
         elif not alert_condition and alert_states[alert_type]['active']:  # no alert anymore, reset alert state and timestamp
             alert_states[alert_type]['active'] = False
@@ -365,6 +362,13 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
                 # Update the initial timestamp to the current time to start counting from the current trigger
                 alert_states[alert_type]['timestamp'] = time_now.isoformat()
                 logger.info(f'{alert_type} audio alert added again after waiting time.')
+    # if a new alerts arrive alline the timestamps off all active alerts so that the alert will repeat every 20min from the last
+    if new:
+        active_alerts = [alert_type for alert_type in ['humidity', 'wind', 'rain'] if alert_states[alert_type]['active']]
+        print('Active alerts: ', active_alerts)
+        for alert_type in active_alerts:
+            # Update the initial timestamp to the current time to start counting from the current trigger for each alert
+            alert_states[alert_type]['timestamp'] = time_now.isoformat()
     return [live_values,
             dbc.Badge(f"Last update: {timestamps}", color='secondary' if timestamps < (time_now - timedelta(minutes=2)) else 'green', className="text-wrap"),
             not is_alert,
@@ -375,19 +379,19 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
 
 
 # callback to play alert audio
-@app.callback([Output('hidden-audio', 'children')],
-              [Input('audio-triggers', 'data')])
+@app.callback(Output('audio-element', 'src'),
+              Input('audio-triggers', 'data'))
 def play_audio(audio_triggers):
     try:
         if not audio_triggers:
             logger.info('No audio triggers. Skipping audio playback.')
-            return [None]
-        for alert_type in audio_triggers:
-            play_alert_audio(alert_type)
-        logger.info(f'Audio {alert_type} played successfully.')
+            return None
+        logger.info('Playing alert and update each timestamp of active alerts')
+        audio_file = "assets/general_alert.wav"
+        return audio_file
     except Exception as e:
-        logger.error(f'Error playing audio {alert_type}: {str(e)}')
-    return [None]
+        logger.error(f'Error setting audio source: {str(e)}')
+        return None
 
 
 # callback  to update the temp graph
