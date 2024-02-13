@@ -273,6 +273,12 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
         else:
             precip_alert = False  # wait to send alert
 
+    # reset the values of rain in case the alert is still False
+    if not precip_alert:
+        p_type = 'None'
+        p_int = 0
+        logger.info('Overwrite rain values with default until alert is active.')
+
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
     if is_alert:  # extra logging
