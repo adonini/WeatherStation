@@ -47,7 +47,7 @@ logger = logging.getLogger('app')
 logger.setLevel(logging.DEBUG)  # override the default severity of logging
 # Create handler: new file every day at 08:00 UTC
 utc_time = time(8, 0, 0)
-file_handler = TimedRotatingFileHandler(log_path + '/dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
+file_handler = TimedRotatingFileHandler(log_path + 'dashboard.log', when='D', interval=1, atTime=utc_time, backupCount=7, utc=True)
 # Create formatter and add it to handler
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s : %(message)s')
 file_handler.setFormatter(formatter)
