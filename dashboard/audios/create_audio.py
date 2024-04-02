@@ -1,6 +1,7 @@
 from gtts import gTTS
 import subprocess
 
+
 # Function to create audio file with gTTS and convert it to WAV
 def create_and_save_wav(message, filename):
     # Create MP3 file using gTTS
@@ -17,15 +18,17 @@ def create_and_save_wav(message, filename):
 
     return wav_filename
 
+
 # Messages and filenames
 messages_and_filenames = {
-    "humidity": "Hey, attention! The outside humidity is above the safety limit for observation.",
-    "rain": "Hey, what's up? Just telling you that it's raining outside. I repeat, it's raining.",
-    "hum_rain": "Hey, Attention! The outside condition is beyond several safety limits: humidity is too high and it's raining.",
-    "wind": "Hey, attention! The wind speed is above the safety limit for observation.",
-    "hum_wind": "Hey, attention! The wind speed is above the safety limits and so is humidity. I repeat wind speed and humidity are too high.",
-    "wind_rain": "Hey, attention! It's raining outside and the wind speed is above the safety limits.",
-    "hum_wind_rain": "Hey, attention! Weather is above all the safety limits. Stop operation and abandon the ship."
+    # "humidity": "Hey, attention! The outside humidity is above the safety limit for observation.",
+    # "rain": "Hey, what's up? Just telling you that it's raining outside. I repeat, it's raining.",
+    # "hum_rain": "Hey, Attention! The outside condition is beyond several safety limits: humidity is too high and it's raining.",
+    # "wind": "Hey, attention! The wind speed is above the safety limit for observation.",
+    # "hum_wind": "Hey, attention! The wind speed is above the safety limits and so is humidity. I repeat wind speed and humidity are too high.",
+    # "wind_rain": "Hey, attention! It's raining outside and the wind speed is above the safety limits.",
+    # "hum_wind_rain": "Hey, attention! Weather is above all the safety limits. Stop operation and abandon the ship.",
+    "general_alert": "Attention please! Weather condition is above the safety limits for observation."
 }
 
 # Create and save WAV files
