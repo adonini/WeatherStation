@@ -28,7 +28,9 @@ from configurations import (location_lst, spd_colors_speed,
                             precipitationtype_dict, alert_states_default,
                             rain_alert_timer, min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
-from content import content, dir_bins, dir_labels, spd_bins, spd_labels, alert_messages
+from content import (content, dir_bins, dir_labels, spd_bins, spd_labels,
+                     alert_messages, satellite_tab, cloud_tab, thunder_tab,
+                     rain_tab)
 from navbar import navbar_menu
 
 
@@ -1054,6 +1056,19 @@ def update_intervals(is_open_wind_speed, is_open_humidity, is_open_wind_avg, is_
         interval1_disabled = False
         interval2_disabled = False
     return interval1_disabled, interval2_disabled
+
+@app.callback(Output("card-content", "children"),
+              [Input('interval-component', 'n_intervals'),
+               Input("card-tabs", "active_tab")])
+def windy_tab(n_intervals, active_tab):
+    if active_tab == "satellite":
+        return satellite_tab
+    elif active_tab == "cloud":
+        return cloud_tab
+    elif active_tab == "thunderstorm":
+        return thunder_tab
+    elif active_tab == "rain":
+        return rain_tab
 
 
 # Run the app
