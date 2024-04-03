@@ -50,6 +50,16 @@ def generate_iframe(src):
     )
 
 
+# create separate tab for the windy card
+def generate_tab(tab_id, label):
+    return dbc.Tab(
+        label=label,
+        tab_id=tab_id,
+        label_style={"textTransform": "capitalize"},
+        active_label_style={"fontSize": "16px", "fontWeight": "bold", "fontStyle": "italic"}
+    )
+
+
 # function to convert the wind direction from deg to cardinal points
 def convert_meteorological_deg2cardinal_dir(deg_measurement):
     """
