@@ -680,68 +680,68 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
         fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
-
+#graph replace by windy map
 # callback to update the brightness graph
-@app.callback([Output('brightness-graph', 'figure'),
-               Output('brightness-timestamp', 'children')],
-              [Input('interval-component', 'n_intervals'),
-               Input('brightness_hour_choice', 'value'),
-               Input('Brightness-refresh-button', 'n_clicks')])
-def update_brightness_graph(n_intervals, time_range, refresh_clicks):
-    projection = {
-        'added': 1,
-        'Brightness lux.value': 1,
-        'Time.value': 1,
-        'Date.value': 1,
-        '_id': 0
-    }
-    # Query the data from the database
-    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
-                                projection, sort=[('added', pymongo.DESCENDING)]))
-    if not data:
-        # Query the latest data from the database
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('added', pymongo.DESCENDING)]
-                                   )
-        if last:
-            # Retrieve all the data starting from the latest data
-            data = list(collection.find({
-                'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                projection, sort=[('added', pymongo.DESCENDING)]))
+# @app.callback([Output('brightness-graph', 'figure'),
+#                Output('brightness-timestamp', 'children')],
+#               [Input('interval-component', 'n_intervals'),
+#                Input('brightness_hour_choice', 'value'),
+#                Input('Brightness-refresh-button', 'n_clicks')])
+# def update_brightness_graph(n_intervals, time_range, refresh_clicks):
+#     projection = {
+#         'added': 1,
+#         'Brightness lux.value': 1,
+#         'Time.value': 1,
+#         'Date.value': 1,
+#         '_id': 0
+#     }
+#     # Query the data from the database
+#     data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+#                                 projection, sort=[('added', pymongo.DESCENDING)]))
+#     if not data:
+#         # Query the latest data from the database
+#         last = collection.find_one({},
+#                                    projection,
+#                                    sort=[('added', pymongo.DESCENDING)]
+#                                    )
+#         if last:
+#             # Retrieve all the data starting from the latest data
+#             data = list(collection.find({
+#                 'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
+#                 projection, sort=[('added', pymongo.DESCENDING)]))
 
-    # Get the brightness values
-    bright = [d['Brightness lux']['value'] for d in data]
-    # create a list of tuple
-    date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-    timestamps = combine_datetime(date_time)
+#     # Get the brightness values
+#     bright = [d['Brightness lux']['value'] for d in data]
+#     # create a list of tuple
+#     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
+#     timestamps = combine_datetime(date_time)
 
-    # correct for data missing for >2min so that no line in connecting the dots in that case
-    new_timestamps, new_bright = handle_data_gaps(timestamps, bright)
+#     # correct for data missing for >2min so that no line in connecting the dots in that case
+#     new_timestamps, new_bright = handle_data_gaps(timestamps, bright)
 
-    # Create the figure
-    dict = {'data': [{'x': new_timestamps, 'y': new_bright}],
-            'layout': {
-                'xaxis': {'tickangle': 45},
-                'yaxis': {'title': 'Brightness [lux]'},
-                'autosize': False,
-                'margin': {'t': 20, 'r': 20},
-                'template': 'plotly_white'}}
-    fig = go.Figure(dict)
-    fig.update_layout(yaxis_range=[0, 160000],
-                      uirevision=True,
-                      modebar_orientation="v",
-                      )
-    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
-    fig.update_xaxes(showgrid=False)
+#     # Create the figure
+#     dict = {'data': [{'x': new_timestamps, 'y': new_bright}],
+#             'layout': {
+#                 'xaxis': {'tickangle': 45},
+#                 'yaxis': {'title': 'Brightness [lux]'},
+#                 'autosize': False,
+#                 'margin': {'t': 20, 'r': 20},
+#                 'template': 'plotly_white'}}
+#     fig = go.Figure(dict)
+#     fig.update_layout(yaxis_range=[0, 160000],
+#                       uirevision=True,
+#                       modebar_orientation="v",
+#                       )
+#     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
+#     fig.update_xaxes(showgrid=False)
 
-    # Check if the refresh button was clicked
-    ctx = dash.callback_context
-    button_id = 'Brightness-refresh-button'
-    if button_id in ctx.triggered[0]['prop_id']:
-        # Reset the zoom by setting 'uirevision' to a unique value
-        fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+#     # Check if the refresh button was clicked
+#     ctx = dash.callback_context
+#     button_id = 'Brightness-refresh-button'
+#     if button_id in ctx.triggered[0]['prop_id']:
+#         # Reset the zoom by setting 'uirevision' to a unique value
+#         fig.update_layout(uirevision=str(uuid.uuid4()))
+#     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
 
 
 # could check package ROSELY too
