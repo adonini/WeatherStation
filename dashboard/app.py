@@ -1024,6 +1024,12 @@ app.callback(
     State("modal_summary", "is_open"),
 )(toggle_modal)
 
+app.callback(
+    Output("modal_windy", "is_open"),
+    Input("windy-info-icon", "n_clicks"),
+    State("modal_windy", "is_open"),
+)(toggle_modal)
+
 
 # callback to enable or disable the intervals based on their respective states in case a modal is open
 @app.callback(
@@ -1040,22 +1046,24 @@ app.callback(
      Input("modal_Rain", "is_open"),
      Input("modal_Pressure", "is_open"),
      Input("modal_Wind Rose", "is_open"),
-     Input("modal_summary", "is_open")],
+     Input("modal_summary", "is_open"),
+     Input("modal_windy", "is_open")],
     [State('interval-component', 'disabled'),
      State('interval-livevalues', 'disabled')],
 )
 def update_intervals(is_open_wind_speed, is_open_humidity, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
                      is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
-                     is_open_pressure, is_open_windrose, is_open_summary, interval1_disabled, interval2_disabled):
+                     is_open_pressure, is_open_windrose, is_open_summary, is_open_windy, interval1_disabled, interval2_disabled):
     if any([is_open_wind_speed, is_open_humidity, is_open_wind_avg, is_open_Wind_Gusts, is_open_wind_direction,
             is_open_temperature, is_open_brightness, is_open_global_radiation, is_open_Rain,
-            is_open_pressure, is_open_windrose, is_open_summary]):
+            is_open_pressure, is_open_windrose, is_open_summary, is_open_windy]):
         interval1_disabled = True
         interval2_disabled = True
     else:
         interval1_disabled = False
         interval2_disabled = False
     return interval1_disabled, interval2_disabled
+
 
 @app.callback(Output("card-content", "children"),
               [Input('interval-component', 'n_intervals'),

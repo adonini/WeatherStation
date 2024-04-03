@@ -1,6 +1,61 @@
 from dash import html
 
 
+# body of the windy modal
+windy_body = html.Div([
+    "In the following a description of weather overlays in the tabs:",
+    html.Br(),
+    html.Ul([
+        html.Li([
+            html.Strong("Satellite:"), " a global picture of the current state of cloud cover from geostationary satellites."
+        ]),
+        html.Li([
+            html.Strong("Clouds:"), " clouds and rain/snow accumulation in the last 3 hours.",
+            html.Br(),
+            html.Span("Rain from convective clouds are not included in this value, for this check the CAPE index.", style={"display": "inline-block", "margin-left": "61px"}),
+            html.Br(),
+            html.Span("Forecast model: ECMWF 9km", style={"display": "inline-block", "margin-left": "61px"}),
+            html.Br(),
+            html.Span("Update interval: 12 - 13 hrs", style={"display": "inline-block", "margin-left": "61px"})
+        ]),
+        html.Li([
+            html.Strong("Rain"), " rain/snow accumulation in the last 3 hours, combined with lightning density forecast.",
+            html.Br(),
+            html.Span(["For more info, read: ", html.A("https://blog.windy.com/global-lightning-forecast", href="https://blog.windy.com/global-lightning-forecast", className="text-primary", style={"text-decoration": "none"}, target="_blank")], style={"display": "inline-block", "margin-left": "38px"}),
+            html.Br(),
+            html.Span("Forecast model: ECMWF 9km", style={"display": "inline-block", "margin-left": "38px"}),
+            html.Br(),
+            html.Span("Update interval: 12 - 13 hrs", style={"display": "inline-block", "margin-left": "38px"})
+        ]),
+        html.Li([
+            html.Strong("Thunderstorms:"), " defined as a number of lighting flashes in the area of one square kilometer, in one day.",
+            html.Br(),
+            html.Span("Forecast model: ECMWF 9km", style={"display": "inline-block", "margin-left": "122px"}),
+            html.Br(),
+            html.Span("Update interval: 12 - 13 hrs", style={"display": "inline-block", "margin-left": "122px"})
+        ])
+    ]),
+    "ECMWF 9km is a very accurate model provided by the ", html.A('European Centre for Medium-Range Weather Forecasts', href='https://www.ecmwf.int/', className='text-primary', style={'text-decoration': 'none'}, target='_blank'), ".",
+    html.Br(),
+    html.Br(),
+    "More overlays can be selected by clicking on the overlay icon on the top right of each Windy map: ",
+    html.Br(),
+    html.Ul([
+        html.Li([
+            html.Em("CAPE index:"), " convective available potential energy represents the potential energy of the atmosphere and can be the indicator of forming convective clouds and storms. Values from 1000 to 2000 can indicate forming of moderate thunderstorms, and over 2000 severe ones."
+        ]),
+        html.Li([
+            html.Em("High clouds:"), " high clouds is cloud coverage at an altitude between circa 6500m and the cloud tops."
+        ]),
+        html.Li([
+            html.Em("Medium clouds:"), " medium clouds is cloud coverage at an altitude between circa 2000m and circa 6500m."
+        ]),
+        html.Li([
+            html.Em("Low clouds:"), " low clouds is cloud coverage at an altitude between the surface and circa 2000m."
+        ])
+    ])
+])
+
 # body of the wind rose info modal
 info_body = html.Div([
     "A Wind Rose displays the distribution of wind speed and wind direction at a given location. ",
