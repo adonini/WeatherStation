@@ -10,7 +10,7 @@ import dash_bootstrap_components as dbc
 import pymongo
 from pymongo import MongoClient
 import plotly.graph_objects as go
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time, timezone
 from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
@@ -130,7 +130,8 @@ app.layout = html.Div([
     [Input('interval-livevalues', 'n_intervals')]
 )
 def update_date_time(n_intervals):
-    return f"{datetime.utcnow().time().strftime('%H:%M:%S %Z')} UTC", f"{datetime.utcnow().date().strftime('%d-%m-%Y %Z')}"
+    utc_now = datetime.now(timezone.utc)
+    return f"{utc_now.time().strftime('%H:%M:%S %Z')} UTC", f"{utc_now.date().strftime('%d-%m-%Y %Z')}"
 
 
 # callback to update moon data every day
@@ -144,7 +145,7 @@ def update_date_time(n_intervals):
 )
 def update_moon(n_intervals):
     location = EarthLocation(lat=location_lst[0] * u.deg, lon=location_lst[1] * u.deg, height=location_lst[2] * u.m)
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     obs = Observer(location=location, timezone="UTC")
     moon_illumination = obs.moon_illumination(now) * 100
     try:
@@ -197,7 +198,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     alert_states = alert_states_store
     rain_alert_timer = rain_timer
     # Get the latest reading from the database
-    time_now = datetime.utcnow()
+    time_now = datetime.now(timezone.utc)
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
     cloud_value, tran9_value = get_magic_values()
     tng_dust_value = get_tng_dust_value()
@@ -206,7 +207,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     date = latest_data['Date']['value']
     try:
         dt_str = date + ' ' + time
-        timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
+        timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S').replace(tzinfo=timezone.utc)
     except Exception as e:
         # if an exception is raised, try to get the second-to-last entry in the database
         logger.warning(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
@@ -418,7 +419,8 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
         'Date.value': 1,
         '_id': 0
     }
-    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+    utc_now = datetime.now(timezone.utc)
+    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
                                 projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not data:
@@ -478,7 +480,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green')
 
 
 # callback to update the humidity graph
@@ -495,7 +497,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
         'Date': 1,
         '_id': 0
     }
-    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+    utc_now = datetime.now(timezone.utc)
+    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
                                 projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
@@ -546,7 +549,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     fig.update_xaxes(showgrid=False)
 
     # Change graph color if above limit if timestamps are up to date
-    if timestamps[0] > (datetime.utcnow() - timedelta(minutes=5)):
+    if timestamps[0].replace(tzinfo=timezone.utc) > (utc_now - timedelta(minutes=5)):
         if latest_data >= 90:
             fig.update_traces(fill='tonexty', line_color='red')
         if 80 <= latest_data < 90:
@@ -558,7 +561,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green')
 
 
 # callback to update the wind graph
@@ -577,8 +580,9 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
         'Date.value': 1,
         '_id': 0
     }
+    utc_now = datetime.now(timezone.utc)
     # Query the data from the database
-    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
                                 projection).sort('added', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
@@ -678,7 +682,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green')
 
 #graph replace by windy map
 # callback to update the brightness graph
@@ -763,7 +767,8 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         'Time.value': 1,
         'Date.value': 1,
     }
-    datapoints = list(collection.find({"added": {"$gte": datetime.utcnow() - timedelta(hours=time_range)}},
+    utc_now = datetime.now(timezone.utc)
+    datapoints = list(collection.find({"added": {"$gte": utc_now - timedelta(hours=time_range)}},
                                       projection, sort=[('added', pymongo.DESCENDING)]))
 
     if not datapoints:
@@ -872,7 +877,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green')
 
 
 # Define the callback function to update the radiation graph
@@ -889,8 +894,9 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
         'Date.value': 1,
         '_id': 0
     }
+    utc_now = datetime.now(timezone.utc)
     # Query the data from the database
-    data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
+    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
                                 projection, sort=[('added', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database and avoid having None values
@@ -940,7 +946,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     if button_id in ctx.triggered[0]['prop_id']:
         # Reset the zoom by setting 'uirevision' to a unique value
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green')
 
 
 # Modals updates
