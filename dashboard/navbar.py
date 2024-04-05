@@ -14,5 +14,6 @@ navbar_menu = dbc.DropdownMenu([
     dbc.DropdownMenuItem("Links", header=True, className="text-center", style={'text-transform': 'uppercase'}),
     dbc.DropdownMenuItem("Windy", href="https://www.windy.com/?800h,28.207,-17.885,8,m:es4afFm", className="text-primary text-capitalize", target="_blank", external_link=True),
     dbc.DropdownMenuItem("AEMET Warnings", href="https://www.aemet.es/en/eltiempo/prediccion/avisos?w=hoy&p=6593&k=coo", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("AEMET ORM Predictions", href="https://www.aemet.es/documentos/es/eltiempo/prediccion/montana/boletin_montana/BM_Caldera_Taburiente.pdf", className="text-primary text-capitalize", target="_blank", external_link=True),
     dbc.DropdownMenuItem("Mountain Forecast", href="https://www.mountain-forecast.com/peaks/Roque-de-los-Muchachos/forecasts/2423", className="text-primary text-capitalize", target="_blank", external_link=True),
 ], label="Menu", style={'zindex': '999'})
