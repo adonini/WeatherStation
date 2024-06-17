@@ -31,7 +31,7 @@ from sidebar import sidebar, create_list_group_item, create_list_group_item_aler
 from content import (content, dir_bins, dir_labels, spd_bins, spd_labels,
                      alert_messages, satellite_tab, cloud_tab, thunder_tab,
                      rain_tab)
-from navbar import navbar_menu
+from navbar import navbar
 
 
 matplotlib.use('Agg')
@@ -86,12 +86,7 @@ app.layout = html.Div([
     dcc.Store(id='audio-triggers', data=[]),
     dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
     html.Audio(id='audio-element', controls=False, autoPlay=True, style={'display': 'none'}),
-    dbc.Row([
-        dbc.Col(navbar_menu, width=1, className='d-flex align-items-center justify-content-lg-start justify-content-center order-3 order-lg-1 ms-lg-4'),
-        dbc.Col(html.H1("LST-1 Weather Station", className="display-4 text-center"), width=10, className='d-flex align-items-center justify-content-center mb-2 mt-2 order-2 order-lg-2'),
-        dbc.Col(html.Img(src=app.get_asset_url('logo.png'), height="60px", className='align-self-center me-lg-4 ml-lg-4'),
-                className='d-flex align-items-center justify-content-lg-end justify-content-center mt-2 order-1 order-lg-3', width=1),
-    ], className='d-flex flex-lg-nowrap flex-column flex-lg-row mt-3 align-items-center justify-content-center text-center'),
+    navbar,
     html.Hr(),
     dbc.Row([
         dbc.Col(sidebar, className="col-12 col-s p-0"),
