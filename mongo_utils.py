@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 import logging
 import pymongo
-from datetime import datetime
+from datetime import datetime, timezone
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
 import os
@@ -79,7 +79,7 @@ class MongoDB:
                 "name": parameter,
                 "description": description,
                 "units": units,
-                "added": datetime.utcnow()
+                "added": datetime.now(timezone.utc)
             }
             rec = self.parameters_col.insert_one(data)
             self.get_parameters()
@@ -116,7 +116,7 @@ class MongoDB:
                 }
             })
         if added is None:
-            added = datetime.utcnow()
+            added = datetime.now(timezone.utc)
         data.update({
             "added": added,
         })

@@ -1,4 +1,5 @@
 import dash_bootstrap_components as dbc
+from dash import html
 import numpy as np
 from datetime import datetime
 from bs4 import BeautifulSoup
@@ -37,6 +38,26 @@ def speed_labels(bins, units):
         else:
             labels.append(f'{int(left+0.01)} - {int(right-0.99)} {units}')
     return list(labels)
+
+
+# function to generate iframe for windy app
+def generate_iframe(src):
+    return html.Iframe(
+        src=src,
+        width="100%",
+        height="100%",
+        style={"padding": 0, "margin": 0}
+    )
+
+
+# create separate tab for the windy card
+def generate_tab(tab_id, label):
+    return dbc.Tab(
+        label=label,
+        tab_id=tab_id,
+        label_style={"textTransform": "capitalize"},
+        active_label_style={"fontSize": "16px", "fontWeight": "bold", "fontStyle": "italic"}
+    )
 
 
 # function to convert the wind direction from deg to cardinal points

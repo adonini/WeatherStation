@@ -2,7 +2,7 @@ from dash import html, dcc
 from utils_modal import summary_body, body_mapping
 import dash_bootstrap_components as dbc
 from configurations import sidebar_style
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 # header of the sidebar
@@ -69,7 +69,7 @@ card_info = dbc.Card([
 # List group in sidebar
 ##############
 def create_list_group_item(title, value, unit, timestamp, badge_color='green', row_color='default'):
-    if value == 'n/a' or timestamp < (datetime.utcnow() - timedelta(minutes=5)):
+    if value == 'n/a' or timestamp < (datetime.now(timezone.utc) - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
     if title in ["Humidity", "Wind 1' Avg", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Rain", "Pressure"]:

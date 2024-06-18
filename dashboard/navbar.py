@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-
+from dash import html
 
 navbar_menu = dbc.DropdownMenu([
     dbc.DropdownMenuItem("Other Weather Stations", header=True, className="text-center", style={'text-transform': 'uppercase'}),
@@ -14,5 +14,30 @@ navbar_menu = dbc.DropdownMenu([
     dbc.DropdownMenuItem("Links", header=True, className="text-center", style={'text-transform': 'uppercase'}),
     dbc.DropdownMenuItem("Windy", href="https://www.windy.com/?800h,28.207,-17.885,8,m:es4afFm", className="text-primary text-capitalize", target="_blank", external_link=True),
     dbc.DropdownMenuItem("AEMET Warnings", href="https://www.aemet.es/en/eltiempo/prediccion/avisos?w=hoy&p=6593&k=coo", className="text-primary text-capitalize", target="_blank", external_link=True),
+    dbc.DropdownMenuItem("AEMET ORM Predictions", href="https://www.aemet.es/documentos/es/eltiempo/prediccion/montana/boletin_montana/BM_Caldera_Taburiente.pdf", className="text-primary text-capitalize", target="_blank", external_link=True),
     dbc.DropdownMenuItem("Mountain Forecast", href="https://www.mountain-forecast.com/peaks/Roque-de-los-Muchachos/forecasts/2423", className="text-primary text-capitalize", target="_blank", external_link=True),
-], label="Menu", style={'zindex': '999'})
+], direction='down', align_end=True, label="Menu", style={'zindex': '999'})
+
+navbar = dbc.Navbar(
+    dbc.Container([
+        dbc.Row([
+            dbc.Col(
+                html.Img(src='./assets/logo1.png', height="100px"),
+                xs=12, lg=3,
+                className="d-flex justify-content-lg-start justify-content-sm-center justify-content-center"
+            ),
+            dbc.Col(
+                html.H1("LST-1 Weather Station", className="display-5 text-center mt-lg-4 mb-sm-4 mb-4"),
+                xs=12, lg=6,  # Automatically adjust width based on content
+            ),
+            dbc.Col(
+                navbar_menu,
+                xs=12, lg=3,
+                className="d-flex justify-content-lg-end justify-content-sm-center justify-content-center"
+            ),
+        ], align="center", className="w-100 justify-content-center m-0 p-0")
+    ], fluid=True),
+    #color='primary',
+    #dark=True,
+    className='navbar navbar-expand-lg bg-white'
+)
