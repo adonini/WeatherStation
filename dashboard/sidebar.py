@@ -86,7 +86,7 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
                 dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="border-bottom position-relative"
+            className="border-bottom position-relative p-1"
         )
     else:
         line = dbc.ListGroupItem(
@@ -95,7 +95,7 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
                 dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="border-bottom position-relative"
+            className="border-bottom position-relative p-1"
         )
     return line
 
@@ -130,7 +130,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                 ], id=f"modal_{title}", scrollable=True, is_open=False),
                 dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative p-1")
     else:
         line = dbc.ListGroupItem([
             dbc.Row([
@@ -141,7 +141,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                     ], direction="horizontal", gap=1)),
                 dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative p-1")
     return line
 
 

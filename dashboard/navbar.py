@@ -22,12 +22,12 @@ navbar = dbc.Navbar(
     dbc.Container([
         dbc.Row([
             dbc.Col(
-                html.Img(src='./assets/logo1.png', height="100px"),
+                html.Img(src='./assets/logo1.png', height="35px"),
                 xs=12, lg=3,
                 className="d-flex justify-content-lg-start justify-content-sm-center justify-content-center"
             ),
             dbc.Col(
-                html.H1("LST-1 Weather Station", className="display-5 text-center mt-lg-4 mb-sm-4 mb-4"),
+                html.H1("LST-1 Weather Station", className="display-5 text-center mb-0"),
                 xs=12, lg=6,  # Automatically adjust width based on content
             ),
             dbc.Col(
