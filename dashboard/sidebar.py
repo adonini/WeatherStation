@@ -5,6 +5,9 @@ from configurations import sidebar_style
 from datetime import datetime, timedelta, timezone
 
 
+BADGE_CLASSES = "fs-6 p-1"
+
+
 # header of the sidebar
 header_summary = dbc.Row([
     dbc.Col(
@@ -72,6 +75,9 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
     if value == 'n/a' or timestamp < (datetime.now(timezone.utc) - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
+
+    content = f"{value} {unit}" if value != 'n/a' else value
+
     if title in ["Humidity", "Wind 1' Avg", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Rain", "Pressure"]:
         body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem(
@@ -83,19 +89,20 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
                     #dbc.ModalFooter(dbc.Button("Close", id=f"close_{title}", className="ms-auto", n_clicks=0)),
                 ], id=f"modal_{title}", scrollable=True, is_open=False,
                 ),
-                dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
+                dbc.Col(dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="border-bottom position-relative"
+            className="border-bottom position-relative p-1"
         )
     else:
+
         line = dbc.ListGroupItem(
             dbc.Row([
                 dbc.Col(title, className="align-items-center justify-content-center"),
-                dbc.Col(dbc.Badge(f"{value} {unit}" if value != 'n/a' else value, color=badge_color), className="d-flex align-items-center justify-content-center")
+                dbc.Col(dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center")
             ]),
             color=row_color,
-            className="border-bottom position-relative"
+            className="border-bottom position-relative p-1"
         )
     return line
 
@@ -128,9 +135,9 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                     dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
                     dbc.ModalBody(body)
                 ], id=f"modal_{title}", scrollable=True, is_open=False),
-                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
+                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative p-1")
     else:
         line = dbc.ListGroupItem([
             dbc.Row([
@@ -139,9 +146,9 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                         html.I(className="bi bi-exclamation-triangle-fill me-2"),
                         html.Div(title),
                     ], direction="horizontal", gap=1)),
-                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color), className="d-flex align-items-center justify-content-center"),
+                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center"),
             ]),
-        ], color=row_color, className="border-bottom position-relative")
+        ], color=row_color, className="border-bottom position-relative p-1")
     return line
 
 

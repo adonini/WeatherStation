@@ -87,7 +87,7 @@ app.layout = html.Div([
     dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
     html.Audio(id='audio-element', controls=False, autoPlay=True, style={'display': 'none'}),
     navbar,
-    html.Hr(),
+    html.Hr(className="m-2"),
     dbc.Row([
         dbc.Col(sidebar, className="col-12 col-s p-0"),
         dbc.Col([
