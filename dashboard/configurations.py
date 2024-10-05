@@ -43,7 +43,7 @@ time_options = [{'label': '1 Hour', 'value': 1},
 # sidebar style
 sidebar_style = {
     "text-align": "center",
-    "padding": "0.5rem 0.5rem",
+    "padding": "0.6rem 0.5rem",
     "background-color": "#596568e3",
     "z-index": "5",
 }

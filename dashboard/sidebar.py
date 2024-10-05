@@ -5,7 +5,7 @@ from configurations import sidebar_style
 from datetime import datetime, timedelta, timezone
 
 
-BADGE_CLASSES = "fs-6 p-1"
+BADGE_CLASSES = "fs-6 p-1 fw-light"
 
 
 # header of the sidebar
