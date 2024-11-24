@@ -202,8 +202,9 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     date = latest_data['Date']['value']
     try:
         dt_str = date + ' ' + time
-        timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S').replace(tzinfo=timezone.utc)
-        logger.debug(f'timestamps: {timestamps}')
+        timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
+        timestamps = timestamps.replace(tzinfo=timezone.utc)  # Ensure timezone is UTC
+        #logger.debug(f'timestamps: {timestamps}')
     except Exception as e:
         # if an exception is raised, try to get the second-to-last entry in the database
         logger.warning(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
@@ -216,7 +217,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
             try:
                 dt_str = date + ' ' + time
                 timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-                logger.debug(f'timestamps2: {timestamps}')
+                #logger.debug(f'timestamps2: {timestamps}')
                 break  # exit the loop if a valid timestamp is found
             except Exception as e:
                 logger.error(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
@@ -361,7 +362,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
             alert_states[alert_type]['active'] = False
             alert_states[alert_type]['timestamp'] = None
         elif alert_condition and alert_states[alert_type]['active']:  # Alert is still active, check if enough time has passed to play audio again
-            timestamp_datetime = datetime.strptime(alert_states[alert_type]['timestamp'], '%Y-%m-%dT%H:%M:%S.%f')
+            timestamp_datetime = datetime.strptime(alert_states[alert_type]['timestamp'], '%Y-%m-%dT%H:%M:%S.%f%z')
             elapsed_time = (time_now - timestamp_datetime).total_seconds()
             if elapsed_time >= min_alert_interval[alert_type]:
                 audio_triggers.append(alert_type)
@@ -375,7 +376,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
         for alert_type in active_alerts:
             # Update the initial timestamp to the current time to start counting from the current trigger for each alert
             alert_states[alert_type]['timestamp'] = time_now.isoformat()
-    logger.debug(f'timestamps3: {timestamps}')
+    #logger.debug(f'timestamps3: {timestamps}')
     return [live_values,
             dbc.Badge(f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}", color='secondary' if timestamps < (time_now - timedelta(minutes=2)) else 'green', className="text-wrap fw-light"),
             not is_alert,
