@@ -190,7 +190,7 @@ def update_sun(n_intervals):
               [Input('interval-livevalues', 'n_intervals')],
               [State('alert-store', 'data'),
                State('rain-store', 'data')])
-def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
+def update_live_values(n_intervals, alert_states_store, rain_timer):  #, n=100):
     alert_states = alert_states_store
     rain_alert_timer = rain_timer
 
@@ -210,26 +210,26 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     except Exception as e:
         # if an exception is raised, try to get the second-to-last entry in the database
         logger.warning(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
-        logger.warning('Checking the second-to-last entry in the database.')
-        latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=1)
-        time = latest_data['Time']['value']
-        date = latest_data['Date']['value']
-        i = 2  # start with the third-to-last entry
-        while True:
-            try:
-                dt_str = date + ' ' + time
-                timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-                #logger.debug(f'timestamps2: {timestamps}')
-                break  # exit the loop if a valid timestamp is found
-            except Exception as e:
-                logger.error(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
-                logger.warning(f'Checking the {i}-to-last entry in the database.')
-                latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=i)
-                time = latest_data['Time']['value']
-                date = latest_data['Date']['value']
-                i += 1  # move to the next entry in the database
-                if i > n:  # exit the loop if all entries have been checked
-                    raise Exception("Unable to find a valid timestamp in the database.")
+        # logger.warning('Checking the second-to-last entry in the database.')
+        # latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=1)
+        # time = latest_data['Time']['value']
+        # date = latest_data['Date']['value']
+        # i = 2  # start with the third-to-last entry
+        # while True:
+        #     try:
+        #         dt_str = date + ' ' + time
+        #         timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
+        #         #logger.debug(f'timestamps2: {timestamps}')
+        #         break  # exit the loop if a valid timestamp is found
+        #     except Exception as e:
+        #         logger.error(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
+        #         logger.warning(f'Checking the {i}-to-last entry in the database.')
+        #         latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=i)
+        #         time = latest_data['Time']['value']
+        #         date = latest_data['Date']['value']
+        #         i += 1  # move to the next entry in the database
+        #         if i > n:  # exit the loop if all entries have been checked
+        #             raise Exception("Unable to find a valid timestamp in the database.")
 
     # Control the values, if they can not be accessed, put n/a
     temp = get_value_or_nan(latest_data, 'Air Temperature')
