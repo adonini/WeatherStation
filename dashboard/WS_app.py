@@ -192,6 +192,7 @@ def update_sun(n_intervals):
 def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     alert_states = alert_states_store
     rain_alert_timer = rain_timer
+
     # Get the latest reading from the database
     time_now = datetime.now(timezone.utc)
     latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
@@ -255,30 +256,38 @@ def update_live_values(n_intervals, alert_states_store, rain_timer, n=100):
     wind_alert = w10_speed >= 36
     precip_alert = p_int > 0
     strong_wind_alert = g_speed >= 85 or w10_speed >= 50
-    # Start or reset the rain alert timer, to be sure is not a fake alert
-    if precip_alert and not rain_alert_timer['active']:  # first time set alert to active and timer
+
+    if rain_alert_timer.get('rain_active') is None:
+        rain_alert_timer['rain_active'] = False
+    # Start or reset the rain alert timer
+    if precip_alert and not rain_alert_timer['active']:
         rain_alert_timer['active'] = True
         rain_alert_timer['start_time'] = time_now.isoformat()
+        rain_alert_timer['rain_active'] = False  # Initial state during the countdown
         precip_alert = False
         logger.info('Rain detected, starting timer.')
-    elif not precip_alert:  # reset
+    elif not precip_alert:
         rain_alert_timer['active'] = False
         rain_alert_timer['start_time'] = None
+        rain_alert_timer['rain_active'] = False  # Reset rain state
         logger.info('Rain stopped, resetting timer.')
-    elif precip_alert and rain_alert_timer['active']:  # Alert is still active, check if enough time has passed
-        timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f')
+    elif precip_alert and rain_alert_timer['active']:
+        # Timer is running; check elapsed time
+        timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f%z')
         elapsed_time = (time_now - timestamp_datetime).total_seconds()
-        if elapsed_time >= 60:
-            precip_alert = True  # rain alert is a true one
-            logger.info('Sending out rain alert after 60sec.')
+        if elapsed_time >= 20:
+            precip_alert = True  # Rain alert becomes true
+            rain_alert_timer['rain_active'] = True  # Set rain state as active
+            logger.info('Rain alert is now active.')
         else:
-            precip_alert = False  # wait to send alert
+            precip_alert = False  # Still within the countdown
+            logger.info(f'Rain alert countdown: {10 - elapsed_time:.2f}s remaining.')
 
-    # reset the values of rain in case the alert is still False
-    if not precip_alert:
+    # Reset rain values only if rain is not active
+    if not rain_alert_timer['rain_active']:
         p_type = 'None'
         p_int = 0
-        logger.info('Overwrite rain values with default until alert is active.')
+        logger.info('Rain values reset to defaults since alert is not yet active.')
 
     # Determine if there's an alert
     is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
