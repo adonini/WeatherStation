@@ -237,3 +237,47 @@ def handle_data_gaps(timestamps, *data_lists, max_time_diff=120):
 
         prev_timestamp = timestamp
     return new_timestamps, *new_data
+
+
+def handle_rain_alert(precip_alert, rain_alert_timer, time_now):
+    """
+    Handles the rain alert logic by starting, stopping, or maintaining the timer.
+    Args:
+        precip_alert (bool): Whether precipitation is currently detected.
+        rain_alert_timer (dict): Dictionary storing rain alert state and start time.
+        time_now (datetime): The current UTC timestamp.
+    Returns:
+        tuple: Updated (precip_alert, rain_alert_timer)
+    """
+    # Ensure necessary keys exist
+    rain_alert_timer.setdefault('rain_active', False)
+
+    # Start or reset the rain alert timer
+    if precip_alert:
+        if not rain_alert_timer['active']:
+            # Start the timer if it's a new rain detection
+            rain_alert_timer['active'] = True
+            rain_alert_timer['start_time'] = time_now.isoformat()
+            rain_alert_timer['rain_active'] = False  # Not active yet, waiting for 20s confirmation
+            precip_alert = False  # Suppress casual rain readings initially
+            logger.info('Rain detected, starting timer.')
+        else:
+            # Timer is running; check elapsed time
+            timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f%z')
+            elapsed_time = (time_now - timestamp_datetime).total_seconds()
+            if elapsed_time >= 20:
+                # 20s elapsed → Confirm rain alert as active
+                rain_alert_timer['rain_active'] = True
+                precip_alert = True  # Rain officially considered active
+                logger.info('Rain alert is now active.')
+            else:
+                # Still in countdown period → suppress alert
+                precip_alert = False
+                logger.info(f'Rain alert countdown: {20 - elapsed_time:.2f}s remaining.')
+    else:
+        # No rain detected → Reset everything
+        rain_alert_timer['active'] = False
+        rain_alert_timer['start_time'] = None
+        rain_alert_timer['rain_active'] = False  # Reset alert state
+        logger.info('Rain stopped, resetting timer.')
+    return precip_alert, rain_alert_timer
