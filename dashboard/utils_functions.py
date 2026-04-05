@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 import requests
 import xml.etree.ElementTree as ET
 import logging
+from configurations import precipitationtype_dict
 
 logger = logging.getLogger('app.functions')
 
@@ -104,28 +105,6 @@ def convert_meteorological_deg2cardinal_dir(deg_measurement):
         return ''
 
 
-def combine_datetime(date_time_list):
-    """
-    Combines a list of dates and times into datetime objects.
-    Args:
-        date_time_list (list): a list of tuples, where each tuple contains a date string in the format YYYYMMDD
-        and a time string in the format HHMMSS
-    Returns:
-        list: A list of datetime objects.
-    """
-    timestamps = []
-    for date_str, time_str in date_time_list:
-        try:
-            dt_str = date_str + ' ' + time_str
-            dt = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-            timestamps.append(dt)
-        except Exception as e:
-            print(f'Error in entry {date_str}, {time_str}: {e}')
-            logger.error(f'Error in timestamp entry {date_str}, {time_str}: {e}')
-            timestamps.append(None)
-    return timestamps
-
-
 def get_magic_values():
     """Retrieve cloud value, and TRAN9 value from the MAGIC website.
     Returns:
@@ -200,9 +179,10 @@ def toggle_modal(n1, is_open):
     return is_open
 
 
-def get_value_or_nan(dict, key):
-    """"Limit to two decimals the output with round"""
-    return round(dict[key]['value'], 2) if dict[key]['value'] is not None else 'n/a'
+def get_value_or_nan(data, key):
+    """Return rounded value or 'n/a' if missing"""
+    value = data.get(key)
+    return round(value, 2) if value is not None else None #'n/a'
 
 
 def handle_data_gaps(timestamps, *data_lists, max_time_diff=120):
@@ -281,3 +261,73 @@ def handle_rain_alert(precip_alert, rain_alert_timer, time_now):
         rain_alert_timer['rain_active'] = False  # Reset alert state
         logger.info('Rain stopped, resetting timer.')
     return precip_alert, rain_alert_timer
+
+
+def safe_get(d, key):
+    val = d.get(key)
+    return round(val, 2) if isinstance(val, (int, float)) else None
+
+
+def extract_live_values(latest_data):
+    p_type_raw = latest_data.get('Precipitation_Type')
+
+    p_type_label = None
+    if p_type_raw is not None:
+        p_type_label = precipitationtype_dict.get(str(int(p_type_raw)), "Unknown")
+
+    return {
+        "temp": get_value_or_nan(latest_data, 'Air_Temperature'),
+        "hum": get_value_or_nan(latest_data, 'Relative_Humidity'),
+        "press": get_value_or_nan(latest_data, 'Absolute_Air_Pressure'),
+        "w_speed": get_value_or_nan(latest_data, 'Average_Wind_Speed'),
+        "w10_speed": get_value_or_nan(latest_data, 'Mean_10_Wind_Speed'),
+        "g_speed": get_value_or_nan(latest_data, 'Max_Wind'),
+        "bright": get_value_or_nan(latest_data, 'Brightness'),
+        "bright_lux": get_value_or_nan(latest_data, 'Brightness_lux'),
+        "dew": get_value_or_nan(latest_data, 'Dew_Point_Temperature'),
+        "w_dir": get_value_or_nan(latest_data, 'Mean_Wind_Direction'),
+        "p_type_raw": p_type_raw,
+        "p_type_label": p_type_label,
+        "p_int": get_value_or_nan(latest_data, 'Precipitation_Intensity'),
+        "p_acc": get_value_or_nan(latest_data, 'Precipitation_Amount'),
+        "rad": get_value_or_nan(latest_data, 'Global_Radiation'),
+    }
+
+
+def compute_alert_flags(values):
+    hum = values["hum"]
+    g_speed = values["g_speed"]
+    w10_speed = values["w10_speed"]
+    p_int = values["p_int"]
+
+    return {
+        "humidity": hum is not None and hum >= 90,
+        "wind": w10_speed is not None and w10_speed >= 36,
+        "gust": g_speed is not None and g_speed >= 60,
+        "rain_raw": p_int is not None and p_int > 0,
+        "strong_wind": (
+            (g_speed is not None and g_speed >= 85) or
+            (w10_speed is not None and w10_speed >= 50)
+        ),
+        "humidity_warning": hum is not None and 80 <= hum < 90,
+        "wind_warning": w10_speed is not None and 30 <= w10_speed < 36,
+        "gust_warning": g_speed is not None and 50 <= g_speed < 60,
+    }
+
+
+def apply_rain_logic(values, flags, rain_alert_timer, time_now):
+    rain_active_input = flags["rain_raw"]
+    rain_confirmed, rain_alert_timer = handle_rain_alert(
+        rain_active_input, rain_alert_timer, time_now
+    )
+
+    flags["rain"] = rain_confirmed
+
+    if not rain_alert_timer.get("rain_active", False):
+        values["p_type_display"] = "No Rain"
+        values["p_int_display"] = 0
+    else:
+        values["p_type_display"] = values["p_type_label"]
+        values["p_int_display"] = values["p_int"]
+
+    return values, flags, rain_alert_timer

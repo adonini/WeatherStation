@@ -65,7 +65,7 @@ spd_colors_speed = ["#d8d8d8",
 
 
 # decode precipitation type
-precipitationtype_dict = {0: 'None',
+precipitationtype_dict = {0: 'No Rain',
                           40: 'Precipitation present',
                           51: 'Light drizzle',
                           52: 'Moderate drizzle',

@@ -1,11 +1,10 @@
 import matplotlib
 import pandas as pd
-from pandas import json_normalize
 import flask
+import uuid
 import logging
-from logging.handlers import TimedRotatingFileHandler
+import itertools
 import dash
-from dash import dcc, html, Input, Output, State
 import dash_bootstrap_components as dbc
 import pymongo
 from pymongo import MongoClient
@@ -18,15 +17,12 @@ from astroplan import Observer
 import os
 from dotenv import load_dotenv
 from waitress import serve
-import uuid
-import itertools
-from utils_functions import (convert_meteorological_deg2cardinal_dir,
-                             combine_datetime, get_magic_values,
-                             get_tng_dust_value, toggle_modal,
-                             get_value_or_nan, handle_data_gaps,
-                             handle_rain_alert)
-from configurations import (location_lst, spd_colors_speed,
-                            precipitationtype_dict, alert_states_default,
+from logging.handlers import TimedRotatingFileHandler
+from dash import dcc, html, Input, Output, State
+from utils_functions import (convert_meteorological_deg2cardinal_dir, get_magic_values,
+                             get_tng_dust_value, toggle_modal, handle_data_gaps,
+                             extract_live_values, compute_alert_flags, apply_rain_logic)
+from configurations import (location_lst, spd_colors_speed, alert_states_default,
                             rain_alert_timer, min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
 from content import (content, dir_bins, dir_labels, spd_bins, spd_labels,
@@ -41,7 +37,7 @@ log_path = os.environ.get('DASH_LOG_PATH')
 db_host = os.environ.get('DB_HOST', 'localhost')
 db_port = os.environ.get('DB_PORT')
 db_name = os.environ.get('DB_NAME')
-db_coll = os.environ.get('DB_COLL')
+db_coll = "weather"
 
 #---------------------------------------------------------------------------#
 # Initialize the main logger
@@ -77,6 +73,128 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
                 meta_tags=[{'name': 'viewport', 'content': 'width=device-width, initial-scale=1.0, maximum-scale=1.5, minimum-scale=0.5'},
                            {'http-equiv': 'refresh', 'content': '840'}],  # automatic refresh of the html page every 14min to avoid stalling in case server is down
                 )
+
+
+##########################
+# Helper functions
+##########################
+def build_alert_message(flags):
+    wind_combined = flags["wind"] or flags["gust"]
+
+    if flags["strong_wind"]:
+        return alert_messages.get((True, False, False, True), '')
+
+    key = (flags["humidity"], wind_combined, flags["rain"])
+    return alert_messages.get(key, "Combination not found in alert messages")
+
+
+def any_alert_active(flags):
+    return any([
+        flags["humidity"],
+        flags["wind"],
+        flags["gust"],
+        flags["rain"],
+        flags["strong_wind"],
+    ])
+
+
+def build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value):
+    bright = values["bright"]
+    bright_lux = values["bright_lux"]
+
+    return [
+        create_list_group_item("Humidity", values["hum"], ' %', timestamps),
+        create_list_group_item("Wind 1' Avg", values["w_speed"], ' km/h', timestamps),
+        create_list_group_item("Wind 10' Avg", values["w10_speed"], ' km/h', timestamps),
+        create_list_group_item("Wind Gusts", values["g_speed"], ' km/h', timestamps),
+        create_list_group_item("Wind Direction", values["w_dir"], f" ° ({convert_meteorological_deg2cardinal_dir(values['w_dir'])})", timestamps),
+        create_list_group_item("Temperature", values["temp"], ' °C', timestamps),
+        create_list_group_item("TNG Dust", tng_dust_value, ' µg/m3', timestamps),
+        create_list_group_item("Rain", values["p_type_display"], '', timestamps),
+        create_list_group_item("Rain Intensity", values["p_int_display"], ' mm/h', timestamps),
+        create_list_group_item("Acc. Rain", values["p_acc"], ' mm/d', timestamps),
+        create_list_group_item("MAGIC Cloudiness", cloud_value, '', timestamps),
+        create_list_group_item("MAGIC Trans@9km", tran9_value, '', timestamps),
+        create_list_group_item("Dew Point Temperature", values["dew"], ' °C', timestamps),
+        create_list_group_item("Global Radiation", values["rad"], ' W/m2', timestamps),
+        create_list_group_item("Pressure", values["press"], ' hPa', timestamps),
+        create_list_group_item("Brightness", bright_lux, ' lux', timestamps)
+        if bright is not None and bright <= 1
+        else create_list_group_item("Brightness", bright, ' klux', timestamps),
+    ]
+
+
+def apply_live_value_alert_styles(live_values, values, flags):
+    if flags["humidity"]:
+        live_values[0] = create_list_group_item_alert("Humidity", values["hum"], ' %')
+    elif flags["humidity_warning"]:
+        live_values[0] = create_list_group_item_alert(
+            "Humidity", values["hum"], ' %',
+            badge_color='warning', row_color='warning'
+        )
+
+    if flags["wind"]:
+        live_values[2] = create_list_group_item_alert("Wind 10' Avg", values["w10_speed"], ' km/h')
+    elif flags["wind_warning"]:
+        live_values[2] = create_list_group_item_alert(
+            "Wind 10' Avg", values["w10_speed"], ' km/h',
+            badge_color='warning', row_color='warning'
+        )
+
+    if flags["gust"]:
+        live_values[3] = create_list_group_item_alert("Wind Gusts", values["g_speed"], ' km/h')
+    elif flags["gust_warning"]:
+        live_values[3] = create_list_group_item_alert(
+            "Wind Gusts", values["g_speed"], ' km/h',
+            badge_color='warning', row_color='warning'
+        )
+
+    if flags["rain"]:
+        live_values[7] = create_list_group_item_alert("Rain", values["p_type_display"], '')
+        live_values[8] = create_list_group_item_alert("Rain Intensity", values["p_int_display"], ' mm/h')
+
+    return live_values
+
+
+def update_audio_state(alert_states, flags, time_now):
+    audio_triggers = []
+    new_trigger = False
+
+    audio_conditions = {
+        "humidity": flags["humidity"],
+        "wind": flags["wind"] or flags["gust"],
+        "rain": flags["rain"],
+    }
+
+    for alert_type, is_active in audio_conditions.items():
+        state = alert_states[alert_type]
+
+        if is_active and not state['active']:
+            state['active'] = True
+            state['timestamp'] = time_now.isoformat()
+            audio_triggers.append(alert_type)
+            new_trigger = True
+
+        elif not is_active and state['active']:
+            state['active'] = False
+            state['timestamp'] = None
+
+        elif is_active and state['active']:
+            timestamp_datetime = datetime.strptime(
+                state['timestamp'], '%Y-%m-%dT%H:%M:%S.%f%z'
+            )
+            elapsed_time = (time_now - timestamp_datetime).total_seconds()
+
+            if elapsed_time >= min_alert_interval[alert_type]:
+                audio_triggers.append(alert_type)
+                state['timestamp'] = time_now.isoformat()
+
+    if new_trigger:
+        for alert_type in audio_conditions:
+            if alert_states[alert_type]['active']:
+                alert_states[alert_type]['timestamp'] = time_now.isoformat()
+
+    return alert_states, audio_triggers
 
 
 ######################
@@ -179,7 +297,7 @@ def update_sun(n_intervals):
         return 'n/a', 'n/a'
 
 
-# update the live values every 20 seconds (depends from the interval)
+# update the live values every 20 seconds
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
                Output('red-alert', 'hidden'),
@@ -190,187 +308,48 @@ def update_sun(n_intervals):
               [Input('interval-livevalues', 'n_intervals')],
               [State('alert-store', 'data'),
                State('rain-store', 'data')])
-def update_live_values(n_intervals, alert_states_store, rain_timer):  #, n=100):
+def update_live_values(n_intervals, alert_states_store, rain_timer):
     alert_states = alert_states_store
     rain_alert_timer = rain_timer
 
-    # Get the latest reading from the database
     time_now = datetime.now(timezone.utc)
-    latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)])
+    latest_data = collection.find_one(sort=[('timestamp', pymongo.DESCENDING)])
+
+    if not latest_data:
+        return [], dbc.Badge("No data", color="secondary"), True, "", alert_states, [], rain_alert_timer
+
+    timestamps = latest_data['timestamp']
     cloud_value, tran9_value = get_magic_values()
     tng_dust_value = get_tng_dust_value()
-    # Get the WS timestamps
-    time = latest_data['Time']['value']
-    date = latest_data['Date']['value']
-    try:
-        dt_str = date + ' ' + time
-        timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-        timestamps = timestamps.replace(tzinfo=timezone.utc)  # Ensure timezone is UTC
-        #logger.debug(f'timestamps: {timestamps}')
-    except Exception as e:
-        # if an exception is raised, try to get the second-to-last entry in the database
-        logger.warning(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
-        # logger.warning('Checking the second-to-last entry in the database.')
-        # latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=1)
-        # time = latest_data['Time']['value']
-        # date = latest_data['Date']['value']
-        # i = 2  # start with the third-to-last entry
-        # while True:
-        #     try:
-        #         dt_str = date + ' ' + time
-        #         timestamps = datetime.strptime(dt_str, '%Y%m%d %H%M%S')
-        #         #logger.debug(f'timestamps2: {timestamps}')
-        #         break  # exit the loop if a valid timestamp is found
-        #     except Exception as e:
-        #         logger.error(f'Error in timestamp entry: {e}. MongoDb ID: {latest_data["_id"]}')
-        #         logger.warning(f'Checking the {i}-to-last entry in the database.')
-        #         latest_data = collection.find_one(sort=[('added', pymongo.DESCENDING)], skip=i)
-        #         time = latest_data['Time']['value']
-        #         date = latest_data['Date']['value']
-        #         i += 1  # move to the next entry in the database
-        #         if i > n:  # exit the loop if all entries have been checked
-        #             raise Exception("Unable to find a valid timestamp in the database.")
 
-    # Control the values, if they can not be accessed, put n/a
-    temp = get_value_or_nan(latest_data, 'Air Temperature')
-    hum = get_value_or_nan(latest_data, 'Relative Humidity')
-    press = get_value_or_nan(latest_data, 'Absolute Air Pressure')
-    w_speed = get_value_or_nan(latest_data, 'Average Wind Speed')
-    w10_speed = get_value_or_nan(latest_data, 'Mean 10 Wind Speed')
-    g_speed = get_value_or_nan(latest_data, 'Max Wind')
-    bright = get_value_or_nan(latest_data, 'Brightness')
-    bright_lux = get_value_or_nan(latest_data, 'Brightness lux')
-    dew = get_value_or_nan(latest_data, 'Dew Point Temperature')
-    w_dir = get_value_or_nan(latest_data, 'Mean Wind Direction')
-    p_type = get_value_or_nan(latest_data, 'Precipitation Type')
-    if p_type != 'n/a':
-        for key_p, value_p in precipitationtype_dict.items():
-            if (p_type == int(key_p)):
-                p_type = value_p
-    p_int = get_value_or_nan(latest_data, 'Precipitation Intensity')
-    p_acc = get_value_or_nan(latest_data, 'Precipitation Amount')
-    rad = get_value_or_nan(latest_data, 'Global Radiation')
+    values = extract_live_values(latest_data)
+    flags = compute_alert_flags(values)
+    values, flags, rain_alert_timer = apply_rain_logic(values, flags, rain_alert_timer, time_now)
 
-    # define alert thresholds
-    hum_alert = hum >= 90
-    gust_alert = g_speed >= 60
-    wind_alert = w10_speed >= 36
-    precip_alert = p_int > 0
-    strong_wind_alert = g_speed >= 85 or w10_speed >= 50
+    is_alert = any_alert_active(flags)
+    message = build_alert_message(flags)
 
-    # Handle rain alert separately
-    precip_alert, rain_alert_timer = handle_rain_alert(precip_alert, rain_alert_timer, time_now)
+    live_values = build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value)
 
-    # Reset rain values only if rain is not active
-    if not rain_alert_timer['rain_active']:
-        p_type = 'None'
-        p_int = 0
-        logger.info('Rain values reset to defaults since alert is not yet active.')
+    if timestamps.replace(tzinfo=timezone.utc) > (time_now - timedelta(minutes=2)):
+        live_values = apply_live_value_alert_styles(live_values, values, flags)
 
-    # Determine if there's an alert
-    is_alert = any([hum_alert, wind_alert, gust_alert, precip_alert, strong_wind_alert])
-    if is_alert:  # extra logging
-        logger.info("One of the weather limits exceed the safety value. Alert is sent.")
-        logger.info(f"Gusts: {g_speed}, wind 10': {w10_speed}, humidity: {hum}, rain: {p_int}")
+    alert_states, audio_triggers = update_audio_state(alert_states, flags, time_now)
 
-    # Determine the alert message displayed based on the combination of alerts
-    wind_alert_combination = wind_alert or gust_alert
-    combinations = [subset for subset in itertools.combinations([hum_alert, wind_alert_combination, precip_alert], 3)]
-    message = alert_messages.get(tuple(combinations[0]), "Combination not found in alert messages")
+    badge = dbc.Badge(
+        f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}",
+        color='secondary' if timestamps.replace(tzinfo=timezone.utc) < (time_now - timedelta(minutes=2)) else 'green',
+        className="text-wrap fw-light"
+    )
 
-    # Override any alert with "very strong wind" message
-    if strong_wind_alert:
-        logger.info("Very strong wind alert sent")
-        message = alert_messages.get((True, False, False, True), '')
-    logger.info(f"Message of the alert: {message}")
-
-    # Format the live values as a list
-    live_values = [
-        create_list_group_item("Humidity", hum, ' %', timestamps),
-        create_list_group_item("Wind 1' Avg", w_speed, ' km/h', timestamps),
-        create_list_group_item("Wind 10' Avg", w10_speed, ' km/h', timestamps),
-        create_list_group_item("Wind Gusts", g_speed, ' km/h', timestamps),
-        create_list_group_item("Wind Direction", w_dir, f" ° ({convert_meteorological_deg2cardinal_dir(w_dir)})", timestamps),
-        create_list_group_item("Temperature", temp, ' °C', timestamps),
-        create_list_group_item("TNG Dust", tng_dust_value, ' µg/m3', timestamps),
-        create_list_group_item("Rain", p_type, '', timestamps),
-        create_list_group_item("Rain Intensity", p_int, ' mm/h', timestamps),
-        create_list_group_item("Acc. Rain", p_acc, ' mm/d', timestamps),
-        create_list_group_item("MAGIC Cloudiness", cloud_value, '', timestamps),
-        create_list_group_item("MAGIC Trans@9km", tran9_value, '', timestamps),
-        create_list_group_item("Dew Point Temperature", dew, ' °C', timestamps),
-        create_list_group_item("Global Radiation", rad, ' W/m2', timestamps),
-        create_list_group_item("Pressure", press, ' hPa', timestamps),
-        create_list_group_item("Brightness", bright_lux, ' lux', timestamps) if bright <= 1 else create_list_group_item("Brightness", bright, ' klux', timestamps),
-    ]
-
-    if timestamps > (time_now - timedelta(minutes=2)):
-        # Check humidity and change the background color accordingly
-        if hum != 'n/a':
-            if hum >= 90:
-                live_values[0] = create_list_group_item_alert("Humidity", hum, ' %')
-            elif 80 <= hum < 90:
-                live_values[0] = create_list_group_item_alert("Humidity", hum, ' %', badge_color='warning', row_color='warning')
-
-        # Check wind 10' speed and change the background color accordingly
-        if w10_speed != 'n/a':
-            if w10_speed >= 36:
-                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w10_speed, ' km/h')
-            elif 30 <= w10_speed < 36:
-                live_values[2] = create_list_group_item_alert("Wind 10' Avg", w10_speed, ' km/h', badge_color='warning', row_color='warning')
-
-        # Check gusts speed and change the background color accordingly
-        if g_speed != 'n/a':
-            if g_speed >= 60:
-                live_values[3] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h')
-            elif 50 <= g_speed < 60:
-                live_values[3] = create_list_group_item_alert("Wind Gusts", g_speed, ' km/h', badge_color='warning', row_color='warning')
-
-        # Check rain  and change the background color accordingly
-        if p_type != 'n/a':
-            if p_type != 'None':
-                live_values[7] = create_list_group_item_alert("Rain", p_type, '')
-        if p_int != 'n/a':
-            if p_int > 0:
-                live_values[8] = create_list_group_item_alert("Rain Intensity", p_int, ' mm/h')
-
-    # Check if the alert state has changed to play alert sounds
-    audio_triggers = []  # List to store audio triggers
-    new = False
-    for alert_type, alert_condition in zip(['humidity', 'wind', 'rain'],
-                                           [hum_alert, wind_alert_combination, precip_alert]):  # NOTE: only wind alert, not gusts or wind_alert_combinations
-        if alert_condition and not alert_states[alert_type]['active']:  # Alert triggered first time, set  timestamp and play audio
-            alert_states[alert_type]['active'] = True
-            alert_states[alert_type]['timestamp'] = time_now.isoformat()
-            audio_triggers.append(alert_type)
-            new = True
-            logger.info(f'{alert_type} alert triggered, adding audio message.')
-        elif not alert_condition and alert_states[alert_type]['active']:  # no alert anymore, reset alert state and timestamp
-            alert_states[alert_type]['active'] = False
-            alert_states[alert_type]['timestamp'] = None
-        elif alert_condition and alert_states[alert_type]['active']:  # Alert is still active, check if enough time has passed to play audio again
-            timestamp_datetime = datetime.strptime(alert_states[alert_type]['timestamp'], '%Y-%m-%dT%H:%M:%S.%f%z')
-            elapsed_time = (time_now - timestamp_datetime).total_seconds()
-            if elapsed_time >= min_alert_interval[alert_type]:
-                audio_triggers.append(alert_type)
-                # Update the initial timestamp to the current time to start counting from the current trigger
-                alert_states[alert_type]['timestamp'] = time_now.isoformat()
-                logger.info(f'{alert_type} audio alert added again after waiting time.')
-    # if a new alerts arrive alline the timestamps off all active alerts so that the alert will repeat every 20min from the last
-    if new:
-        active_alerts = [alert_type for alert_type in ['humidity', 'wind', 'rain'] if alert_states[alert_type]['active']]
-        print('Active alerts: ', active_alerts)
-        for alert_type in active_alerts:
-            # Update the initial timestamp to the current time to start counting from the current trigger for each alert
-            alert_states[alert_type]['timestamp'] = time_now.isoformat()
-    #logger.debug(f'timestamps3: {timestamps}')
     return [live_values,
-            dbc.Badge(f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}", color='secondary' if timestamps < (time_now - timedelta(minutes=2)) else 'green', className="text-wrap fw-light"),
+            badge,
             not is_alert,
             message,
             alert_states,
             audio_triggers,
-            rain_alert_timer]
+            rain_alert_timer
+            ]
 
 
 # callback to play alert audio
@@ -398,33 +377,29 @@ def play_audio(audio_triggers):
 def update_temp_graph(n_intervals, time_range, refresh_clicks):
     # Define the projection to query only the required fields
     projection = {
-        'added': 1,
-        'Air Temperature.value': 1,
-        'Dew Point Temperature.value': 1,
-        'Time.value': 1,
-        'Date.value': 1,
+        'timestamp': 1,
+        'Air_Temperature': 1,
+        'Dew_Point_Temperature': 1,
         '_id': 0
     }
     utc_now = datetime.now(timezone.utc)
-    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection, sort=[('added', pymongo.DESCENDING)]))
+    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+                                projection, sort=[('timestamp', pymongo.DESCENDING)]))
 
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
                                    projection,
-                                   sort=[('added', pymongo.DESCENDING)]
+                                   sort=[('timestamp', pymongo.DESCENDING)]
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
     # Get the temperature values and the dew-point values
-    temps = [d['Air Temperature']['value'] for d in data]
-    dews = [d['Dew Point Temperature']['value'] for d in data]
-    # create a list of tuple and get WS timestamps
-    date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-    timestamps = combine_datetime(date_time)
+    temps = [d.get('Air_Temperature') for d in data]
+    dews = [d.get('Dew_Point_Temperature') for d in data]
+    timestamps = [doc['timestamp'] for doc in data]
 
     # correct for data missing for >2min so that no line in connecting the dots is shown in that case
     new_timestamps, new_temps, new_dews = handle_data_gaps(timestamps, temps, dews)
@@ -477,31 +452,27 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                Input('Humidity-refresh-button', 'n_clicks')])
 def update_hum_graph(n_intervals, time_range, refresh_clicks):
     projection = {
-        'added': 1,
-        'Relative Humidity.value': 1,
-        'Time': 1,
-        'Date': 1,
+        'timestamp': 1,
+        'Relative_Humidity': 1,
         '_id': 0
     }
     utc_now = datetime.now(timezone.utc)
-    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection).sort('added', pymongo.DESCENDING))  # first value is the newest
+    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+                                projection).sort('timestamp', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
                                    projection,
-                                   sort=[('added', pymongo.DESCENDING)]
-                                   )
+                                   sort=[('timestamp', pymongo.DESCENDING)])
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
 
     # Get the most recent value
-    latest_data = data[0]['Relative Humidity']['value']
-    hums = [d['Relative Humidity']['value'] for d in data]
-    date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-    timestamps = combine_datetime(date_time)
+    latest_data = data[0].get('Relative_Humidity')
+    hums = [d.get('Relative_Humidity') for d in data]
+    timestamps = [doc['timestamp'] for doc in data]
 
     # correct for data missing for >2min so that no line in connecting the dots in that case
     new_timestamps, new_hums = handle_data_gaps(timestamps, hums)
@@ -535,7 +506,8 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     fig.update_xaxes(showgrid=False)
 
     # Change graph color if above limit if timestamps are up to date
-    if timestamps[0].replace(tzinfo=timezone.utc) > (utc_now - timedelta(minutes=5)):
+    latest_ts = timestamps[0].replace(tzinfo=timezone.utc)
+    if latest_ts and latest_ts > (utc_now - timedelta(minutes=5)):
         if latest_data >= 90:
             fig.update_traces(fill='tonexty', line_color='red')
         if 80 <= latest_data < 90:
@@ -558,42 +530,38 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                Input('Wind Speed-refresh-button', 'n_clicks')])
 def update_wind_graph(n_intervals, time_range, refresh_clicks):
     projection = {
-        'added': 1,
-        'Average Wind Speed.value': 1,
-        'Max Wind.value': 1,
-        'Mean 10 Wind Speed.value': 1,
-        'Time.value': 1,
-        'Date.value': 1,
+        'timestamp': 1,
+        'Average_Wind_Speed': 1,
+        'Max_Wind': 1,
+        'Mean_10_Wind_Speed': 1,
         '_id': 0
     }
     utc_now = datetime.now(timezone.utc)
     # Query the data from the database
-    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection).sort('added', pymongo.DESCENDING))  # first value is the newest
+    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+                                projection).sort('timestamp', pymongo.DESCENDING))  # first value is the newest
     if not data:
         # Query the latest data from the database
         last = collection.find_one({},
                                    projection,
-                                   sort=[('added', pymongo.DESCENDING)]
+                                   sort=[('timestamp', pymongo.DESCENDING)]
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
 
     fig = go.Figure()
 
     # Get the most recent value
-    # latest_wdata = data[0]['Average Wind Speed']['value']
-    latest_w10data = data[0]['Mean 10 Wind Speed']['value']
-    latest_gdata = data[0]['Max Wind']['value']
+    latest_w10data = data[0].get('Mean_10_Wind_Speed')
+    latest_gdata = data[0].get('Max_Wind')
     # Get the wind and gusts values
-    w_speed = [d.get('Average Wind Speed', {}).get('value') for d in data]
-    w10_speed = [d.get('Mean 10 Wind Speed', {}).get('value') for d in data]
-    g_speed = [d.get('Max Wind', {}).get('value') for d in data]
-    # Get the timestamps of the WS
-    date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-    timestamps = combine_datetime(date_time)
+    w_speed = [d.get('Average_Wind_Speed') for d in data]
+    w10_speed = [d.get('Mean_10_Wind_Speed') for d in data]
+    g_speed = [d.get('Max_Wind') for d in data]
+
+    timestamps = [doc['timestamp'] for doc in data]
 
     # correct for data missing for >2min so that no line in connecting the dots in that case
     new_timestamps, new_w_speed, new_w10_speed, new_g_speed = handle_data_gaps(timestamps, w_speed, w10_speed, g_speed)
@@ -670,69 +638,6 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
         fig.update_layout(uirevision=str(uuid.uuid4()))
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green', className="fw-light")
 
-#graph replace by windy map
-# callback to update the brightness graph
-# @app.callback([Output('brightness-graph', 'figure'),
-#                Output('brightness-timestamp', 'children')],
-#               [Input('interval-component', 'n_intervals'),
-#                Input('brightness_hour_choice', 'value'),
-#                Input('Brightness-refresh-button', 'n_clicks')])
-# def update_brightness_graph(n_intervals, time_range, refresh_clicks):
-#     projection = {
-#         'added': 1,
-#         'Brightness lux.value': 1,
-#         'Time.value': 1,
-#         'Date.value': 1,
-#         '_id': 0
-#     }
-#     # Query the data from the database
-#     data = list(collection.find({'added': {'$gte': datetime.utcnow() - timedelta(hours=time_range)}},
-#                                 projection, sort=[('added', pymongo.DESCENDING)]))
-#     if not data:
-#         # Query the latest data from the database
-#         last = collection.find_one({},
-#                                    projection,
-#                                    sort=[('added', pymongo.DESCENDING)]
-#                                    )
-#         if last:
-#             # Retrieve all the data starting from the latest data
-#             data = list(collection.find({
-#                 'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-#                 projection, sort=[('added', pymongo.DESCENDING)]))
-
-#     # Get the brightness values
-#     bright = [d['Brightness lux']['value'] for d in data]
-#     # create a list of tuple
-#     date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-#     timestamps = combine_datetime(date_time)
-
-#     # correct for data missing for >2min so that no line in connecting the dots in that case
-#     new_timestamps, new_bright = handle_data_gaps(timestamps, bright)
-
-#     # Create the figure
-#     dict = {'data': [{'x': new_timestamps, 'y': new_bright}],
-#             'layout': {
-#                 'xaxis': {'tickangle': 45},
-#                 'yaxis': {'title': 'Brightness [lux]'},
-#                 'autosize': False,
-#                 'margin': {'t': 20, 'r': 20},
-#                 'template': 'plotly_white'}}
-#     fig = go.Figure(dict)
-#     fig.update_layout(yaxis_range=[0, 160000],
-#                       uirevision=True,
-#                       modebar_orientation="v",
-#                       )
-#     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Brightness: %{y:.2f} lux<br><extra></extra> '), connectgaps=False)
-#     fig.update_xaxes(showgrid=False)
-
-#     # Check if the refresh button was clicked
-#     ctx = dash.callback_context
-#     button_id = 'Brightness-refresh-button'
-#     if button_id in ctx.triggered[0]['prop_id']:
-#         # Reset the zoom by setting 'uirevision' to a unique value
-#         fig.update_layout(uirevision=str(uuid.uuid4()))
-#     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0] < (datetime.utcnow() - timedelta(minutes=5)) else 'green')
-
 
 # could check package ROSELY too
 # https://gist.github.com/phobson/41b41bdd157a2bcf6e14
@@ -747,35 +652,29 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
     # Fetch the wind data from the MongoDB database for the last x hours
     projection = {
         "_id": 0,
-        "added": 1,
-        "Mean 10 Wind Speed.value": 1,
-        "Mean Wind Direction.value": 1,
-        'Time.value': 1,
-        'Date.value': 1,
+        "timestamp": 1,
+        "Mean_10_Wind_Speed": 1,
+        "Mean_Wind_Direction": 1,
     }
     utc_now = datetime.now(timezone.utc)
-    datapoints = list(collection.find({"added": {"$gte": utc_now - timedelta(hours=time_range)}},
-                                      projection, sort=[('added', pymongo.DESCENDING)]))
+    datapoints = list(collection.find({"timestamp": {"$gte": utc_now - timedelta(hours=time_range)}},
+                                      projection, sort=[('timestamp', pymongo.DESCENDING)]))
 
     if not datapoints:
         # Query the latest data from the database
         last = collection.find_one({},
                                    projection,
-                                   sort=[('added', pymongo.DESCENDING)]
+                                   sort=[('timestamp', pymongo.DESCENDING)]
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            datapoints = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                                              projection, sort=[('added', pymongo.DESCENDING)]))
+            datapoints = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                                              projection, sort=[('timestamp', pymongo.DESCENDING)]))
 
-    wind_data = json_normalize(datapoints).rename(columns={'Mean 10 Wind Speed.value': 'WindSpd',
-                                                           'Mean Wind Direction.value': 'WindDir',
-                                                           })
-
-    # Get the WS timestamps
-    # using zip() to iterate over both the Date.value and Time.value columns of the pd db simultaneously
-    date_time_list = [(date, time) for date, time in zip(wind_data['Date.value'], wind_data['Time.value'])]
-    timestamps = combine_datetime(date_time_list)
+    wind_data = pd.DataFrame(datapoints).rename(columns={
+        'Mean_10_Wind_Speed': 'WindSpd',
+        'Mean_Wind_Direction': 'WindDir'})
+    timestamps = wind_data['timestamp'].tolist()
 
     # Determine the total number of observations and how many have calm conditions
     total_count = wind_data.shape[0]
@@ -874,38 +773,34 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
                Input('Global Radiation-refresh-button', 'n_clicks')])
 def update_radiation_graph(n_intervals, time_range, refresh_clicks):
     projection = {
-        'added': 1,
-        'Global Radiation.value': 1,
-        'Time.value': 1,
-        'Date.value': 1,
+        'timestamp': 1,
+        'Global_Radiation': 1,
         '_id': 0
     }
     utc_now = datetime.now(timezone.utc)
     # Query the data from the database
-    data = list(collection.find({'added': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection, sort=[('added', pymongo.DESCENDING)]))
+    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+                                projection, sort=[('timestamp', pymongo.DESCENDING)]))
     if not data:
         # Query the latest data from the database and avoid having None values
         last = collection.find_one({},
                                    projection,
-                                   sort=[('added', pymongo.DESCENDING)]
+                                   sort=[('timestamp', pymongo.DESCENDING)]
                                    )
         if last:
             # Retrieve all the data starting from the latest data
-            data = list(collection.find({'added': {'$gte': last['added'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('added', pymongo.DESCENDING)]))
+            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
     # Get the global radiation values
-    rad = [d['Global Radiation']['value'] for d in data]
-    # Get the WS timestamps
-    date_time = [(doc['Date']['value'], doc['Time']['value']) for doc in data]
-    timestamps = combine_datetime(date_time)
+    rad = [d.get('Global_Radiation') for d in data]
+    timestamps = [doc['timestamp'] for doc in data]
 
     # correct for data missing for >2min so that no line in connecting the dots in that case
     new_timestamps, new_rad = handle_data_gaps(timestamps, rad)
 
     # Create the figure
     dict = {
-        'data': [{'x': new_timestamps, 'y': rad}],
+        'data': [{'x': new_timestamps, 'y': new_rad}],
         'layout': {
             #'title': f'Global radiation in the Last {time_range} Hours',
             'xaxis': {'tickangle': 45},
