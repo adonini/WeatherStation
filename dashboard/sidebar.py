@@ -7,6 +7,38 @@ from datetime import datetime, timedelta, timezone
 
 BADGE_CLASSES = "fs-6 p-1 fw-light"
 
+SIDEBAR_MODAL_TITLES = [
+    "Humidity",
+    "Wind 1' Avg",
+    "Wind 10' Avg",
+    "Wind Gusts",
+    "Wind Direction",
+    "Temperature",
+    "Brightness",
+    "Global Radiation",
+    "Rain",
+    "Rain Intensity",
+    "Pressure",
+]
+
+
+def build_sidebar_modals():
+    modals = []
+    for title in SIDEBAR_MODAL_TITLES:
+        body = body_mapping.get(title, "Default body content.")
+        modals.append(
+            dbc.Modal(
+                [
+                    dbc.ModalHeader(dbc.ModalTitle(title), className="modal-header"),
+                    dbc.ModalBody(body),
+                ],
+                id=f"modal_{title}",
+                scrollable=True,
+                is_open=False,
+            )
+        )
+    return modals
+
 
 # header of the sidebar
 header_summary = dbc.Row([
@@ -72,34 +104,41 @@ card_info = dbc.Card([
 # List group in sidebar
 ##############
 def create_list_group_item(title, value, unit, timestamp, badge_color='green', row_color='default'):
-    if value == 'n/a' or timestamp < (datetime.now(timezone.utc) - timedelta(minutes=5)):
+    if value == 'n/a' or timestamp.replace(tzinfo=timezone.utc) < (datetime.now(timezone.utc) - timedelta(minutes=5)):
         badge_color = 'secondary'
         row_color = 'secondary'
 
     content = f"{value} {unit}" if value != 'n/a' else value
 
     if title in ["Humidity", "Wind 1' Avg", "Wind 10' Avg", "Wind Gusts", "Wind Direction", "Temperature", "Brightness", "Global Radiation", "Rain", "Pressure"]:
-        body = body_mapping.get(title, "Default body content.")
         line = dbc.ListGroupItem(
             dbc.Row([
-                dbc.Col(html.A(title, id=f"open_{title}", href="#", n_clicks=0, className="align-items-center justify-content-center", style={"color": "var(--primary)", "textDecoration": "none"})),
-                dbc.Modal([
-                    dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
-                    dbc.ModalBody(body),
-                    #dbc.ModalFooter(dbc.Button("Close", id=f"close_{title}", className="ms-auto", n_clicks=0)),
-                ], id=f"modal_{title}", scrollable=True, is_open=False,
+                dbc.Col(
+                    html.A(
+                        title,
+                        id=f"open_{title}",
+                        href="#",
+                        n_clicks=0,
+                        className="align-items-center justify-content-center",
+                        style={"color": "var(--primary)", "textDecoration": "none"}
+                    )
                 ),
-                dbc.Col(dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center")
+                dbc.Col(
+                    dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES),
+                    className="d-flex align-items-center justify-content-center"
+                )
             ]),
             color=row_color,
             className="border-bottom position-relative p-1"
         )
     else:
-
         line = dbc.ListGroupItem(
             dbc.Row([
                 dbc.Col(title, className="align-items-center justify-content-center"),
-                dbc.Col(dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center")
+                dbc.Col(
+                    dbc.Badge(content, color=badge_color, class_name=BADGE_CLASSES),
+                    className="d-flex align-items-center justify-content-center"
+                )
             ]),
             color=row_color,
             className="border-bottom position-relative p-1"
@@ -108,34 +147,32 @@ def create_list_group_item(title, value, unit, timestamp, badge_color='green', r
 
 
 def create_list_group_item_alert(title, value, unit, badge_color='danger', row_color='danger'):
-    """
-    Create a ListGroupItem with title, value and unit Badge, and Modal (for certain titles).
-    Args:
-    title (str): Title of the ListGroupItem.
-    value (str/int/float): Value of the item.
-    unit (str): Unit of the value.
-    badge_color (str): Color of the Badge element (Default: 'danger').
-    row_color (str): Color of the ListGroupItem element (Default: 'danger').
-    Returns:
-    line (dbc.ListGroupItem): A Bootstrap ListGroupItem element.
-    """
     if value == 'n/a':
         badge_color = 'secondary'
         row_color = 'secondary'
-    # Create a list of titles that require a modal and check if the value exists in the list
-    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts", "Rain", "Rain Intensity"]:  # "Wind Speed",
-        body = body_mapping.get(title, "Default body content.")
+
+    if title in ["Humidity", "Wind 10' Avg", "Wind Gusts", "Rain", "Rain Intensity"]:
         line = dbc.ListGroupItem([
             dbc.Row([
                 dbc.Col([
-                    html.I(className=("bi bi-exclamation-triangle-fill me-3" if badge_color == 'warning' else "bi bi-x-octagon-fill me-3"), style={"display": "inline-block"}),
-                    html.A(title, id=f"open_{title}", href="#", n_clicks=0, style={"display": "inline-block", "cursor": "pointer", "color": "var(--primary)", "textDecoration": "none"}),
+                    html.I(
+                        className=("bi bi-exclamation-triangle-fill me-3" if badge_color == 'warning'
+                                   else "bi bi-x-octagon-fill me-3"),
+                        style={"display": "inline-block"}
+                    ),
+                    html.A(
+                        title,
+                        id=f"open_{title}",
+                        href="#",
+                        n_clicks=0,
+                        style={"display": "inline-block", "cursor": "pointer",
+                               "color": "var(--primary)", "textDecoration": "none"},
+                    ),
                 ], className="d-flex align-items-center justify-content-center"),
-                dbc.Modal([
-                    dbc.ModalHeader(dbc.ModalTitle(f"{title}"), className="modal-header"),
-                    dbc.ModalBody(body)
-                ], id=f"modal_{title}", scrollable=True, is_open=False),
-                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center"),
+                dbc.Col(
+                    dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES),
+                    className="d-flex align-items-center justify-content-center"
+                ),
             ]),
         ], color=row_color, className="border-bottom position-relative p-1")
     else:
@@ -145,8 +182,12 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
                     dbc.Stack([
                         html.I(className="bi bi-exclamation-triangle-fill me-2"),
                         html.Div(title),
-                    ], direction="horizontal", gap=1)),
-                dbc.Col(dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES), className="d-flex align-items-center justify-content-center"),
+                    ], direction="horizontal", gap=1)
+                ),
+                dbc.Col(
+                    dbc.Badge(f"{value} {unit}", color=badge_color, class_name=BADGE_CLASSES),
+                    className="d-flex align-items-center justify-content-center"
+                ),
             ]),
         ], color=row_color, className="border-bottom position-relative p-1")
     return line
@@ -158,6 +199,7 @@ def create_list_group_item_alert(title, value, unit, badge_color='danger', row_c
 sidebar = html.Div([
     dbc.Nav(
         [html.Div(card_summary),
+         html.Div(build_sidebar_modals()),
          dcc.Interval(id='interval-livevalues', interval=20000, n_intervals=0, disabled=False),
          html.Hr(),
          html.Div(card_info)],
