@@ -88,6 +88,8 @@ card_info = dbc.Card([
         html.Hr(),
         html.Div([html.I(className="bi bi-sunrise me-2"), " Sunrise ", html.Span(id='sunrise-time', style={'marginLeft': '10px'})]),
         html.Div([html.I(className="bi bi-sunset me-2"), " Sunset ", html.Span(id='sunset-time', style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-arrow-up-circle me-2"), " Astro dawn ", html.Span(id='astro-dawn-time', style={'marginLeft': '10px'})]),
+        html.Div([html.I(className="bi bi-arrow-down-circle me-2"), " Astro dusk ", html.Span(id='astro-dusk-time', style={'marginLeft': '10px'})]),
         html.Hr(),
         html.Div([
             #html.P([html.I(className='fas fa-eye'), ' Visible ', html.Span(id='moon-visibility')]),

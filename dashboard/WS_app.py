@@ -13,6 +13,7 @@ from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
+from astropy.time import Time
 import os
 from dotenv import load_dotenv
 from waitress import serve
@@ -277,23 +278,40 @@ def update_moon(n_intervals):
     return f"{moon_illumination:>{data_formatter}} %", moon_rise_time, moon_set_time
 
 
-# update sunrise, sunset and moon data every day
 @app.callback(
     [Output('sunrise-time', 'children'),
-     Output('sunset-time', 'children')],
+     Output('sunset-time', 'children'),
+     Output('astro-dusk-time', 'children'),
+     Output('astro-dawn-time', 'children')],
     [Input('interval-day-change', 'n_intervals')]
 )
 def update_sun(n_intervals):
     try:
-        # Create a Sun object
-        sun = Sun(location_lst[0], location_lst[1])
-        # Get today's sunrise and sunset in UTC
-        today_sr = sun.get_sunrise_time()
-        today_ss = sun.get_sunset_time()
-        return f"{today_sr.strftime('%H:%M')} UTC", f"{today_ss.strftime('%H:%M')} UTC"
-    except SunTimeException as e:
-        logger.error(f"Couldn't calculate sun rising and setting time! Error: {e}")
-        return 'n/a', 'n/a'
+        location = EarthLocation(
+            lat=location_lst[0] * u.deg,
+            lon=location_lst[1] * u.deg,
+            height=location_lst[2] * u.m
+        )
+
+        obs = Observer(location=location, timezone="UTC")
+
+        now = Time(datetime.now(timezone.utc))
+
+        sunrise = obs.sun_rise_time(now, which='next')
+        sunset = obs.sun_set_time(now, which='next')
+        astro_dusk = obs.twilight_evening_astronomical(now, which='next')
+        astro_dawn = obs.twilight_morning_astronomical(now, which='next')
+
+        return (
+            sunrise.to_datetime(timezone=timezone.utc).strftime('%H:%M UTC'),
+            sunset.to_datetime(timezone=timezone.utc).strftime('%H:%M UTC'),
+            astro_dusk.to_datetime(timezone=timezone.utc).strftime('%H:%M UTC'),
+            astro_dawn.to_datetime(timezone=timezone.utc).strftime('%H:%M UTC'),
+        )
+
+    except Exception:
+        logger.exception("Couldn't calculate sun/twilight times")
+        return ('n/a',) * 4
 
 
 # update the live values every 20 seconds
