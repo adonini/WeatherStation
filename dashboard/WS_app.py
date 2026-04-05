@@ -400,8 +400,11 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     dews = [d.get('Dew_Point_Temperature') for d in data]
     timestamps = [doc['timestamp'] for doc in data]
 
+    dew_spread = [(t - d) if (t is not None and d is not None) else None
+                  for t, d in zip(temps, dews)]
+
     # correct for data missing for >2min so that no line in connecting the dots is shown in that case
-    new_timestamps, new_temps, new_dews = handle_data_gaps(timestamps, temps, dews)
+    new_timestamps, new_temps, new_dews, new_spread = handle_data_gaps(timestamps, temps, dews, dew_spread)
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=new_timestamps, y=new_temps,
@@ -419,19 +422,58 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                              connectgaps=False,
                              )
                   )
-    fig.update_layout(yaxis_range=[-30, 30],
-                      uirevision=True,
-                      autosize=True,
-                      yaxis_title='Temperature [°C]',
-                      xaxis_tickangle=45,
-                      margin_t=20,
-                      margin_r=20,
-                      template='plotly_white',
-                      legend=dict(orientation="h", yanchor="bottom",
-                                  y=1.02, xanchor="right", x=1),
-                      modebar_add=["hovercompare", "v1hovermode"],
-                      modebar_orientation="v",
-                      )
+
+    fig.add_trace(go.Scatter(
+        x=new_timestamps,
+        y=new_spread,
+        name='Dew Spread',
+        line_color='darkorange',
+        hovertemplate='%{x}<br>Dew Spread: %{y:.2f} °C<br><extra></extra>',
+        connectgaps=False,
+        yaxis='y2'
+    ))
+
+    fig.add_hline(
+        y=2,
+        line_dash='dash',
+        line_color='red',
+        yref='y2',
+        annotation_text='Condensation risk',
+        annotation_position='top left'
+    )
+
+    fig.update_layout(
+        uirevision=True,
+        autosize=True,
+        xaxis_tickangle=45,
+        margin_t=20,
+        margin_r=20,
+        template='plotly_white',
+        modebar_add=["hovercompare", "v1hovermode"],
+        modebar_orientation="v",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        yaxis=dict(
+            title='Temperature [°C]',
+            range=[-30, 30]
+        ),
+        yaxis2=dict(
+            title=dict(
+                text='Dew Spread [°C]',
+                font=dict(color='darkorange')
+            ),
+            overlaying='y',
+            side='right',
+            range=[0, 15],
+            tickfont=dict(color='darkorange'),
+            showgrid=False
+        )
+    )
     fig.update_xaxes(showgrid=False)
 
     # Check if the refresh button was clicked
