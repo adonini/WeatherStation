@@ -421,7 +421,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                   )
     fig.update_layout(yaxis_range=[-30, 30],
                       uirevision=True,
-                      autosize=False,
+                      autosize=True,
                       yaxis_title='Temperature [°C]',
                       xaxis_tickangle=45,
                       margin_t=20,
@@ -490,7 +490,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 100],
                       uirevision=True,  # stay zoomed in with an update
-                      autosize=False,
+                      autosize=True,
                       yaxis_title='Humidity [%]',
                       xaxis_tickangle=45,
                       margin_t=20,
@@ -612,7 +612,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
                       uirevision=True,
-                      autosize=False,
+                      autosize=True,
                       yaxis_title='Wind speed [km/h]',
                       xaxis_tickangle=45,
                       margin_t=20,
@@ -738,7 +738,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         )
 
     fig.update_layout(
-        autosize=False,
+        autosize=True,
         polar_angularaxis_direction="clockwise",
         showlegend=True,
         dragmode=False,
@@ -831,7 +831,7 @@ def update_radiation_graph(n_intervals, time_range, refresh_clicks):
             'yaxis': {'title': 'Global radiation [W/m^2]'},
             #'width': 620,
             #'height': 400,
-            'autosize': False,
+            'autosize': True,
             #"xaxis.autorange": True,
             'margin': {'t': 20, 'r': 20},
             'template': 'plotly_white',

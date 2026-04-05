@@ -69,7 +69,8 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
                 value=1,
                 clearable=False,
                 searchable=False,
-                style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
+                maxHeight=500,
+                style={'color': 'black', 'align': 'center', 'width': '130px', 'minWidth': '130px', 'optionHeight': 35},
             ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
             dbc.Col([
                 dbc.Button(
@@ -94,7 +95,8 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
                 value=1,
                 clearable=False,
                 searchable=False,
-                style={'color': 'black', 'align': 'center', 'width': '100px', 'float': 'right'},
+                maxHeight=500,
+                style={'color': 'black', 'align': 'center', 'width': '130px', 'minWidth': '130px', 'optionHeight': 35},
             ), width=4, style={"display": "flex", "align-items": "center", "justify-content": "flex-end"}),
             dbc.Col([
                 dbc.Button(
@@ -115,13 +117,13 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
         size="md",
         color="primary",
         delay_show=1000,
-        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "98%", "height": "100%", "padding": 0}, config=config)]),  # width and height to 100% of the parent element
+        children=[dcc.Graph(id=graph_id, figure={}, style={"width": "100%", "height": "380px", "padding": 0}, config=config, responsive=True)]),  # width and height to 100% of the parent element
         #id=f"{graph_id}-loading",
     )
     return dbc.Card(
         [
             dbc.CardHeader(header, className="card text-white bg-primary", style={'width': '100%'}),
-            dbc.CardBody(body, style={"width": "100%", "padding": 0}),
+            dbc.CardBody(body, style={"width": "100%", "padding": 0, "overflow": "hidden"}),
             dbc.CardFooter(id=timestamp_id, children=[]),
         ],
         className="border rounded p-0 col-cards-2",
