@@ -175,7 +175,8 @@ content = dbc.Row([
     make_plot_card("Humidity", "hum_hour_choice", "humidity-graph", "hum-timestamp"),
     make_plot_card("Temperature", "temp_hour_choice", "temp-graph", "temp-timestamp"),
     make_plot_card("Wind Rose", "windrose_hour_choice", "wind-rose", "windrose-timestamp"),
-    make_plot_card("Global Radiation", "rad_hour_choice", "radiation-graph", "rad-timestamp"),
+    #make_plot_card("Global Radiation", "rad_hour_choice", "radiation-graph", "rad-timestamp"),
+    make_plot_card("Pressure", "press_hour_choice", "pressure-graph", "press-timestamp"),
     windy_card,
     #make_plot_card("Brightness", "brightness_hour_choice", "brightness-graph", "brightness-timestamp"),
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update

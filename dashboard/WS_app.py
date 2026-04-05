@@ -9,7 +9,6 @@ import pymongo
 from pymongo import MongoClient
 import plotly.graph_objects as go
 from datetime import datetime, timedelta, time, timezone
-from suntime import Sun, SunTimeException
 from astropy.coordinates import EarthLocation
 import astropy.units as u
 from astroplan import Observer
@@ -850,68 +849,188 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
 
 
 # Define the callback function to update the radiation graph
-@app.callback([Output('radiation-graph', 'figure'),
-               Output('rad-timestamp', 'children')],
-              [Input('interval-component', 'n_intervals'),
-               Input('rad_hour_choice', 'value'),
-               Input('Global Radiation-refresh-button', 'n_clicks')])
-def update_radiation_graph(n_intervals, time_range, refresh_clicks):
+# @app.callback([Output('radiation-graph', 'figure'),
+#                Output('rad-timestamp', 'children')],
+#               [Input('interval-component', 'n_intervals'),
+#                Input('rad_hour_choice', 'value'),
+#                Input('Global Radiation-refresh-button', 'n_clicks')])
+# def update_radiation_graph(n_intervals, time_range, refresh_clicks):
+#     projection = {
+#         'timestamp': 1,
+#         'Global_Radiation': 1,
+#         '_id': 0
+#     }
+#     utc_now = datetime.now(timezone.utc)
+#     # Query the data from the database
+#     data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+#                                 projection, sort=[('timestamp', pymongo.DESCENDING)]))
+#     if not data:
+#         # Query the latest data from the database and avoid having None values
+#         last = collection.find_one({},
+#                                    projection,
+#                                    sort=[('timestamp', pymongo.DESCENDING)]
+#                                    )
+#         if last:
+#             # Retrieve all the data starting from the latest data
+#             data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+#                                         projection, sort=[('timestamp', pymongo.DESCENDING)]))
+#     # Get the global radiation values
+#     rad = [d.get('Global_Radiation') for d in data]
+#     timestamps = [doc['timestamp'] for doc in data]
+
+#     # correct for data missing for >2min so that no line in connecting the dots in that case
+#     new_timestamps, new_rad = handle_data_gaps(timestamps, rad)
+
+#     # Create the figure
+#     dict = {
+#         'data': [{'x': new_timestamps, 'y': new_rad}],
+#         'layout': {
+#             #'title': f'Global radiation in the Last {time_range} Hours',
+#             'xaxis': {'tickangle': 45},
+#             'yaxis': {'title': 'Global radiation [W/m^2]'},
+#             #'width': 620,
+#             #'height': 400,
+#             'autosize': True,
+#             #"xaxis.autorange": True,
+#             'margin': {'t': 20, 'r': 20},
+#             'template': 'plotly_white',
+#         }
+#     }
+#     fig = go.Figure(dict)
+#     fig.update_layout(yaxis_range=[0, 1300],
+#                       uirevision=True,
+#                       modebar_orientation="v",
+#                       )
+#     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
+#     fig.update_xaxes(showgrid=False)
+
+#     # Check if the refresh button was clicked
+#     ctx = dash.callback_context
+#     button_id = 'Global Radiation-refresh-button'
+#     if button_id in ctx.triggered[0]['prop_id']:
+#         # Reset the zoom by setting 'uirevision' to a unique value
+#         fig.update_layout(uirevision=str(uuid.uuid4()))
+#     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green', className="fw-light")
+@app.callback(
+    [Output('pressure-graph', 'figure'),
+     Output('press-timestamp', 'children')],
+    [Input('interval-component', 'n_intervals'),
+     Input('press_hour_choice', 'value'),
+     Input('Pressure-refresh-button', 'n_clicks')]
+)
+def update_pressure_graph(n_intervals, time_range, refresh_clicks):
     projection = {
         'timestamp': 1,
-        'Global_Radiation': 1,
+        'Absolute_Air_Pressure': 1,
         '_id': 0
     }
+
     utc_now = datetime.now(timezone.utc)
-    # Query the data from the database
-    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection, sort=[('timestamp', pymongo.DESCENDING)]))
+
+    data = list(collection.find(
+        {'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
+        projection,
+        sort=[('timestamp', pymongo.DESCENDING)]
+    ))
+
     if not data:
-        # Query the latest data from the database and avoid having None values
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('timestamp', pymongo.DESCENDING)]
-                                   )
+        last = collection.find_one(
+            {},
+            projection,
+            sort=[('timestamp', pymongo.DESCENDING)]
+        )
         if last:
-            # Retrieve all the data starting from the latest data
-            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
-    # Get the global radiation values
-    rad = [d.get('Global_Radiation') for d in data]
+            data = list(collection.find(
+                {'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
+                projection,
+                sort=[('timestamp', pymongo.DESCENDING)]
+            ))
+
+    if not data:
+        return go.Figure(), dbc.Badge("No data", color="secondary", className="fw-light")
+
+    pressures = [d.get('Absolute_Air_Pressure') for d in data]
     timestamps = [doc['timestamp'] for doc in data]
 
-    # correct for data missing for >2min so that no line in connecting the dots in that case
-    new_timestamps, new_rad = handle_data_gaps(timestamps, rad)
+    new_timestamps, new_pressures = handle_data_gaps(timestamps, pressures)
 
-    # Create the figure
-    dict = {
-        'data': [{'x': new_timestamps, 'y': new_rad}],
-        'layout': {
-            #'title': f'Global radiation in the Last {time_range} Hours',
-            'xaxis': {'tickangle': 45},
-            'yaxis': {'title': 'Global radiation [W/m^2]'},
-            #'width': 620,
-            #'height': 400,
-            'autosize': True,
-            #"xaxis.autorange": True,
-            'margin': {'t': 20, 'r': 20},
-            'template': 'plotly_white',
-        }
-    }
-    fig = go.Figure(dict)
-    fig.update_layout(yaxis_range=[0, 1300],
-                      uirevision=True,
-                      modebar_orientation="v",
-                      )
-    fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
+    valid_pressures = [p for p in pressures if p is not None]
+    latest_pressure = pressures[0]
+
+    if len(valid_pressures) >= 2 and pressures[-1] is not None and latest_pressure is not None:
+        pressure_delta = latest_pressure - pressures[-1]
+    else:
+        pressure_delta = None
+
+    fig = go.Figure()
+
+    fig.add_trace(go.Scatter(
+        x=new_timestamps,
+        y=new_pressures,
+        name='Pressure',
+        line_color="#316395",
+        hovertemplate='%{x}<br>Pressure: %{y:.2f} hPa<br><extra></extra>',
+        connectgaps=False
+    ))
+
+    if pressure_delta is not None:
+        if pressure_delta > 0.5:
+            trend = "↑"
+        elif pressure_delta < -0.5:
+            trend = "↓"
+        else:
+            trend = "→"
+
+        delta_text = f"Δ ({time_range}h): {pressure_delta:+.2f} hPa {trend}"
+    else:
+        delta_text = f"Δ ({time_range}h): n/a"
+
+    fig.update_layout(
+        uirevision=True,
+        autosize=True,
+        yaxis_title='Pressure [hPa]',
+        xaxis_tickangle=45,
+        margin_t=40,
+        margin_r=20,
+        template='plotly_white',
+        modebar_add=["hovercompare", "v1hovermode"],
+        modebar_orientation="v",
+        legend=dict(
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1
+        ),
+        annotations=[
+            dict(
+                text=delta_text,
+                xref='paper',
+                yref='paper',
+                x=0.01,
+                y=1.12,
+                showarrow=False,
+                font=dict(size=12)
+            )
+        ]
+    )
+
     fig.update_xaxes(showgrid=False)
 
-    # Check if the refresh button was clicked
+    # optional: set a tighter y-range if enough valid points exist
+    if valid_pressures:
+        ymin = min(valid_pressures)
+        ymax = max(valid_pressures)
+        pad = max(0.5, (ymax - ymin) * 0.1)
+        fig.update_yaxes(range=[ymin - pad, ymax + pad])
+
     ctx = dash.callback_context
-    button_id = 'Global Radiation-refresh-button'
-    if button_id in ctx.triggered[0]['prop_id']:
-        # Reset the zoom by setting 'uirevision' to a unique value
+    button_id = 'Pressure-refresh-button'
+    if ctx.triggered and button_id in ctx.triggered[0]['prop_id']:
         fig.update_layout(uirevision=str(uuid.uuid4()))
-    return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green', className="fw-light")
+    return fig, dbc.Badge(f"Last update: {timestamps[0]}",
+                          color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green',
+                          className="fw-light")
 
 
 # Modals updates
