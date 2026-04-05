@@ -185,7 +185,9 @@ content = dbc.Row([
 # Define bins and labels for speed and wind
 spd_bins = [-1, 0.99, 5.99, 11.99, 19.99, 28.99, 38.99, 49.99, 61.99, 74.99, 88.99, 102.99, np.inf]
 spd_labels = speed_labels(spd_bins, units='km/h')
-# represent boundaries of wind direction bins. Each bin spans 22.5 degrees.
-dir_bins = np.arange(-22.5 / 2, 360 + 22.5, 22.5)
-# assign midpoint of each bin
-dir_labels = (dir_bins[:-1] + dir_bins[1:]) / 2
+# represent boundaries of wind direction bins. Each bin spans 22.5 degrees. full circle = 360°. We cut it into 16 slices: So each slice is 22.5° wide.
+# 1. Bins (edges of slices): each slice starts and ends
+#2 . Labels (names of slices): the middle of each slice
+# unique label only
+dir_bins_local = np.arange(-11.25, 348.75 + 22.5, 22.5)
+dir_labels_local = np.arange(0, 360, 22.5)

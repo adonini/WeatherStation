@@ -3,7 +3,6 @@ import pandas as pd
 import flask
 import uuid
 import logging
-import itertools
 import dash
 import dash_bootstrap_components as dbc
 import pymongo
@@ -25,7 +24,7 @@ from utils_functions import (convert_meteorological_deg2cardinal_dir, get_magic_
 from configurations import (location_lst, spd_colors_speed, alert_states_default,
                             rain_alert_timer, min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
-from content import (content, dir_bins, dir_labels, spd_bins, spd_labels,
+from content import (content, dir_bins_local, dir_labels_local, spd_bins, spd_labels,
                      alert_messages, satellite_tab, cloud_tab, thunder_tab,
                      rain_tab)
 from navbar import navbar
@@ -676,23 +675,48 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
         'Mean_Wind_Direction': 'WindDir'})
     timestamps = wind_data['timestamp'].tolist()
 
+    # Drop rows with missing values
+    wind_data = wind_data.dropna(subset=['WindSpd', 'WindDir'])
+
+    if wind_data.empty:
+        return go.Figure(), dbc.Badge("No valid data", color="secondary", className="fw-light")
+
+    # Normalize directions so 348.75..360 wraps into the North bin
+    wind_data["WindDirAdj"] = wind_data["WindDir"].where(
+        wind_data["WindDir"] < 348.75,
+        wind_data["WindDir"] - 360
+    )
+
+    wind_data["WindSpd_bins"] = pd.cut(
+        wind_data["WindSpd"],
+        bins=spd_bins,
+        labels=spd_labels,
+        right=True
+    )
+
+    wind_data["WindDir_bins"] = pd.cut(
+        wind_data["WindDirAdj"],
+        bins=dir_bins_local,
+        labels=dir_labels_local,
+        right=False,
+        include_lowest=True
+    )
+
     # Determine the total number of observations and how many have calm conditions
     total_count = wind_data.shape[0]
     calm_count = wind_data.query("WindSpd < 1").shape[0]
-    rose = (wind_data.assign(WindSpd_bins=lambda df:
-            pd.cut(df['WindSpd'], bins=spd_bins, labels=spd_labels, right=True))
-            .assign(WindDir_bins=lambda df:
-                    pd.cut(df['WindDir'], bins=dir_bins, labels=dir_labels, right=False)
-                    )
-            .replace({'WindDir_bins': {360: 0}})  # unify the 360° and 0° bins under the 0° label
-            .groupby(by=['WindSpd_bins', 'WindDir_bins'])
-            .size()
-            .unstack(level='WindSpd_bins')
-            .fillna(0)
-            .assign(calm=lambda df: calm_count / df.shape[0])
-            .sort_index(axis=1)
-            .applymap(lambda x: x / total_count * 100)
-            )
+
+    rose = (
+        wind_data
+        .groupby(by=['WindSpd_bins', 'WindDir_bins'], observed=False)
+        .size()
+        .unstack(level='WindSpd_bins')
+        .fillna(0)
+        .assign(calm=lambda df: calm_count / df.shape[0])
+        .sort_index(axis=1)
+    )
+
+    rose = rose / total_count * 100
 
     fig = go.Figure()
     #print(rose.columns)
