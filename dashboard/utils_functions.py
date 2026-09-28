@@ -197,6 +197,10 @@ def handle_data_gaps(timestamps, *data_lists, max_time_diff=120):
     Returns:
         Tuple: A tuple containing the updated timestamp list and the updated data lists for the provided data.
     """
+    if any(len(values) != len(timestamps) for values in data_lists):
+        raise ValueError('Each data series must match the timestamp count')
+    if not timestamps:
+        return [], *[[] for _ in data_lists]
     new_data = [[] for _ in range(len(data_lists))]  # initialize empty lists, 3 values -> 3 lists
     new_timestamps = []  # initialize this with the first timestamp already
     prev_timestamp = timestamps[0]  # initialize the prev_timestamp with the timestamp of the first entry (which is the MOST RECENT!!)
@@ -204,7 +208,7 @@ def handle_data_gaps(timestamps, *data_lists, max_time_diff=120):
     new_timestamps.append(timestamps[0])
     for i in range(len(data_lists)):
         new_data[i].append(data_lists[i][0])
-    for timestamp, *values in zip(timestamps[1:], *data_lists):
+    for timestamp, *values in zip(timestamps[1:], *(values[1:] for values in data_lists)):
         time_difference = abs((timestamp - prev_timestamp).total_seconds())
 
         if time_difference >= max_time_diff:

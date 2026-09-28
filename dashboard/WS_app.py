@@ -29,6 +29,8 @@ from content import (content, dir_bins_local, dir_labels_local, spd_bins, spd_la
                      rain_tab)
 from navbar import navbar
 from satellite import register_satellite_callbacks
+from history_cache import HistoryCache
+from graph_rendering import history_trace
 
 
 matplotlib.use('Agg')
@@ -60,6 +62,17 @@ try:
     client = MongoClient("mongodb://" + db_host + ":" + db_port)
     mydb = client[db_name]
     collection = mydb[db_coll]
+    graph_history = HistoryCache(
+        collection, 'timestamp', [
+            'Absolute_Air_Pressure',
+            'Air_Temperature',
+            'Average_Wind_Speed',
+            'Dew_Point_Temperature',
+            'Max_Wind',
+            'Mean_10_Wind_Speed',
+            'Mean_Wind_Direction',
+            'Relative_Humidity',
+        ])
 except Exception:
     logger.exception("Failed to connect to MongoDB.")
 
@@ -392,27 +405,12 @@ def play_audio(audio_triggers):
                Input('temp_hour_choice', 'value'),
                Input('Temperature-refresh-button', 'n_clicks')])
 def update_temp_graph(n_intervals, time_range, refresh_clicks):
-    # Define the projection to query only the required fields
-    projection = {
-        'timestamp': 1,
-        'Air_Temperature': 1,
-        'Dew_Point_Temperature': 1,
-        '_id': 0
-    }
+    # Reuse full-resolution history across graph callbacks.
     utc_now = datetime.now(timezone.utc)
-    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection, sort=[('timestamp', pymongo.DESCENDING)]))
-
-    if not data:
-        # Query the latest data from the database
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('timestamp', pymongo.DESCENDING)]
-                                   )
-        if last:
-            # Retrieve all the data starting from the latest data
-            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
+    data = graph_history.read(
+        time_range, utc_now,
+        force=any(item['prop_id'].endswith('-refresh-button.n_clicks')
+                  for item in dash.callback_context.triggered))
     # Get the temperature values and the dew-point values
     temps = [d.get('Air_Temperature') for d in data]
     dews = [d.get('Dew_Point_Temperature') for d in data]
@@ -425,14 +423,14 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
     new_timestamps, new_temps, new_dews, new_spread = handle_data_gaps(timestamps, temps, dews, dew_spread)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_temps,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_temps,
                              name='Temperature',
                              line_color="#316395",
                              hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
                              connectgaps=False))
 
     # Add dew-point temp to the plot
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_dews,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_dews,
                              name='Dew Point',
                              line_color='firebrick',
                              line_dash='dot',
@@ -441,7 +439,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                              )
                   )
 
-    fig.add_trace(go.Scatter(
+    fig.add_trace(history_trace(
         x=new_timestamps,
         y=new_spread,
         name='Dew Spread',
@@ -492,7 +490,7 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
             showgrid=False
         )
     )
-    fig.update_xaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False, type='date')
 
     # Check if the refresh button was clicked
     ctx = dash.callback_context
@@ -510,23 +508,11 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
                Input('hum_hour_choice', 'value'),
                Input('Humidity-refresh-button', 'n_clicks')])
 def update_hum_graph(n_intervals, time_range, refresh_clicks):
-    projection = {
-        'timestamp': 1,
-        'Relative_Humidity': 1,
-        '_id': 0
-    }
     utc_now = datetime.now(timezone.utc)
-    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection).sort('timestamp', pymongo.DESCENDING))  # first value is the newest
-    if not data:
-        # Query the latest data from the database
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('timestamp', pymongo.DESCENDING)])
-        if last:
-            # Retrieve all the data starting from the latest data
-            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
+    data = graph_history.read(
+        time_range, utc_now,
+        force=any(item['prop_id'].endswith('-refresh-button.n_clicks')
+                  for item in dash.callback_context.triggered))
 
     # Get the most recent value
     latest_data = data[0].get('Relative_Humidity')
@@ -537,7 +523,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     new_timestamps, new_hums = handle_data_gaps(timestamps, hums)
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_hums,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_hums,
                              name='Humidity',
                              hoveron='points',
                              line_color="#316395",
@@ -562,7 +548,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                       yaxis_tickvals=yaxis_tickvals,
                       yaxis_ticktext=yaxis_ticktext,
                       )
-    fig.update_xaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False, type='date')
 
     # Change graph color if above limit if timestamps are up to date
     latest_ts = timestamps[0].replace(tzinfo=timezone.utc)
@@ -588,27 +574,11 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                Input('wind_hour_choice', 'value'),
                Input('Wind Speed-refresh-button', 'n_clicks')])
 def update_wind_graph(n_intervals, time_range, refresh_clicks):
-    projection = {
-        'timestamp': 1,
-        'Average_Wind_Speed': 1,
-        'Max_Wind': 1,
-        'Mean_10_Wind_Speed': 1,
-        '_id': 0
-    }
     utc_now = datetime.now(timezone.utc)
-    # Query the data from the database
-    data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-                                projection).sort('timestamp', pymongo.DESCENDING))  # first value is the newest
-    if not data:
-        # Query the latest data from the database
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('timestamp', pymongo.DESCENDING)]
-                                   )
-        if last:
-            # Retrieve all the data starting from the latest data
-            data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                                        projection, sort=[('timestamp', pymongo.DESCENDING)]))
+    data = graph_history.read(
+        time_range, utc_now,
+        force=any(item['prop_id'].endswith('-refresh-button.n_clicks')
+                  for item in dash.callback_context.triggered))
 
     fig = go.Figure()
 
@@ -627,7 +597,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
 
     # Wind 1' trace
     w_name = "Wind 1' Avg"
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_w_speed,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_w_speed,
                              name=w_name,
                              hoveron='points',
                              line_color="#316395",
@@ -638,7 +608,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     g_name = 'Wind Gusts'
     if latest_gdata >= 60:
         g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_g_speed,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_g_speed,
                              name=g_name,
                              hoveron='points',
                              line_color='#86ce00',
@@ -656,7 +626,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     w10_name = "Wind 10' Avg"
     if latest_w10data >= 36:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
-    fig.add_trace(go.Scatter(x=new_timestamps, y=new_w10_speed,
+    fig.add_trace(history_trace(x=new_timestamps, y=new_w10_speed,
                              name=w10_name,
                              hoveron='points',
                              line_color="rgb(219,112,147)",
@@ -687,7 +657,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                       yaxis_tickvals=yaxis_tickvals,
                       yaxis_ticktext=yaxis_ticktext,
                       )
-    fig.update_xaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False, type='date')
 
     # Check if the refresh button was clicked
     ctx = dash.callback_context
@@ -709,26 +679,11 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
               )
 def update_wind_rose(n_intervals, time_range, refresh_clicks):
     # Fetch the wind data from the MongoDB database for the last x hours
-    projection = {
-        "_id": 0,
-        "timestamp": 1,
-        "Mean_10_Wind_Speed": 1,
-        "Mean_Wind_Direction": 1,
-    }
     utc_now = datetime.now(timezone.utc)
-    datapoints = list(collection.find({"timestamp": {"$gte": utc_now - timedelta(hours=time_range)}},
-                                      projection, sort=[('timestamp', pymongo.DESCENDING)]))
-
-    if not datapoints:
-        # Query the latest data from the database
-        last = collection.find_one({},
-                                   projection,
-                                   sort=[('timestamp', pymongo.DESCENDING)]
-                                   )
-        if last:
-            # Retrieve all the data starting from the latest data
-            datapoints = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                                              projection, sort=[('timestamp', pymongo.DESCENDING)]))
+    datapoints = graph_history.read(
+        time_range, utc_now,
+        force=any(item['prop_id'].endswith('-refresh-button.n_clicks')
+                  for item in dash.callback_context.triggered))
 
     wind_data = pd.DataFrame(datapoints).rename(columns={
         'Mean_10_Wind_Speed': 'WindSpd',
@@ -903,7 +858,7 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
 #                       modebar_orientation="v",
 #                       )
 #     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
-#     fig.update_xaxes(showgrid=False)
+#     fig.update_xaxes(showgrid=False, type='date')
 
 #     # Check if the refresh button was clicked
 #     ctx = dash.callback_context
@@ -920,32 +875,11 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
      Input('Pressure-refresh-button', 'n_clicks')]
 )
 def update_pressure_graph(n_intervals, time_range, refresh_clicks):
-    projection = {
-        'timestamp': 1,
-        'Absolute_Air_Pressure': 1,
-        '_id': 0
-    }
-
     utc_now = datetime.now(timezone.utc)
-
-    data = list(collection.find(
-        {'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-        projection,
-        sort=[('timestamp', pymongo.DESCENDING)]
-    ))
-
-    if not data:
-        last = collection.find_one(
-            {},
-            projection,
-            sort=[('timestamp', pymongo.DESCENDING)]
-        )
-        if last:
-            data = list(collection.find(
-                {'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-                projection,
-                sort=[('timestamp', pymongo.DESCENDING)]
-            ))
+    data = graph_history.read(
+        time_range, utc_now,
+        force=any(item['prop_id'].endswith('-refresh-button.n_clicks')
+                  for item in dash.callback_context.triggered))
 
     if not data:
         return go.Figure(), dbc.Badge("No data", color="secondary", className="fw-light")
@@ -965,7 +899,7 @@ def update_pressure_graph(n_intervals, time_range, refresh_clicks):
 
     fig = go.Figure()
 
-    fig.add_trace(go.Scatter(
+    fig.add_trace(history_trace(
         x=new_timestamps,
         y=new_pressures,
         name='Pressure',
@@ -1016,7 +950,7 @@ def update_pressure_graph(n_intervals, time_range, refresh_clicks):
         ]
     )
 
-    fig.update_xaxes(showgrid=False)
+    fig.update_xaxes(showgrid=False, type='date')
 
     # optional: set a tighter y-range if enough valid points exist
     if valid_pressures:

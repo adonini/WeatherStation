@@ -117,7 +117,8 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
     body = html.Div(dbc.Spinner(
         size="md",
         color="primary",
-        delay_show=1000,
+        delay_show=0,  # Give immediate feedback, even for fast cached updates.
+        delay_hide=200,  # Avoid a barely visible flash on very quick responses.
         children=[dcc.Graph(id=graph_id, figure={}, style={"width": "100%", "height": "380px", "padding": 0}, config=config, responsive=True)]),  # width and height to 100% of the parent element
         #id=f"{graph_id}-loading",
     )
