@@ -1,10 +1,11 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
-from utils_modal import info_body, windy_body
+from utils_modal import info_body
 from configurations import config, time_options
-from utils_functions import speed_labels, generate_iframe, generate_tab
+from utils_functions import speed_labels
 import numpy as np
 from satellite import make_satellite_card
+from windy import make_windy_card
 
 
 # Map combinations of alerts to messages
@@ -135,39 +136,7 @@ def make_plot_card(value_name, dropdown_id, graph_id, timestamp_id):
 ######################
 #   Windy
 ######################
-cloud_url = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=7&overlay=clouds&product=ecmwf&level=surface&lat=28.766&lon=-17.88&detailLat=28.7666636&detailLon=-17.8833298&marker=true&message=true'
-satellite_url = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=7&overlay=satellite&product=satellite&level=surface&lat=28.766&lon=-17.88&detailLat=28.7666636&detailLon=-17.8833298&marker=true&message=true'
-thunder_url = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=7&overlay=thunder&product=ecmwf&level=surface&lat=28.766&lon=-17.88&detailLat=28.7666636&detailLon=-17.8833298&marker=true&message=true'
-rain_url = 'https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=mm&metricTemp=°C&metricWind=km/h&zoom=7&overlay=rain&product=ecmwf&level=surface&lat=28.766&lon=-17.88&detailLat=28.7666636&detailLon=-17.8833298&marker=true&message=true'
-
-satellite_tab = generate_iframe(satellite_url)
-cloud_tab = generate_iframe(cloud_url)
-rain_tab = generate_iframe(rain_url)
-thunder_tab = generate_iframe(thunder_url)
-
-tabs = [generate_tab("satellite", "Satellite"),
-        generate_tab("cloud", "Clouds"),
-        generate_tab("rain", "Rain"),
-        generate_tab("thunderstorm", "Thunderstorm")]
-
-windy_card = dbc.Card([
-    dbc.CardHeader(
-        dbc.Row([
-            dbc.Col(html.I(className="bi bi-info-circle", id="windy-info-icon", n_clicks=0, style={"font-size": "24px", "cursor": "pointer"}),
-                    style={"float": "left"}, className="position-absolute top-50 start-0 translate-middle-y", width=1),
-            dbc.Modal([
-                dbc.ModalHeader(dbc.ModalTitle("Windy info"), className="modal-header"),
-                dbc.ModalBody(windy_body)],
-                id="modal_windy",
-                scrollable=True,
-                size="xl",
-                is_open=False),
-            dbc.Col(dbc.Tabs(tabs,
-                             id="card-tabs",
-                             active_tab="satellite"))]),
-        className="card text-white bg-primary", style={'width': '100%'}),
-    dbc.CardBody(id="card-content", style={"width": "100%", "padding": 0})],
-    className="border rounded p-0 col-cards-2")
+windy_card = make_windy_card()
 
 ######################
 # # Define content
