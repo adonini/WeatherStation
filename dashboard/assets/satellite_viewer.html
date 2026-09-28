@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;color:#343a40;background:#fff;font:13px Arial,sans-serif}
+.viewer{height:100vh;display:flex;flex-direction:column;background:white}.toolbar{display:flex;gap:6px;align-items:center;padding:8px;flex-wrap:wrap;border-bottom:1px solid #ddd}
+button,select{font:inherit;color:inherit;background:#fff;border:1px solid #ccc;border-radius:4px;padding:6px 9px;cursor:pointer}button:hover{background:#eee}button.active{background:#3c5c84;color:white;border-color:#3c5c84}button:disabled{opacity:.5;cursor:default}select{min-width:0;flex:1;max-width:230px}.spacer{flex:1}
+#map{flex:1;min-height:180px;background:#182533}.observation-row{display:flex;justify-content:space-between;align-items:baseline;gap:4px 16px;flex-wrap:wrap;padding:7px 10px;font-size:12px}#stamp{font-variant-numeric:tabular-nums}#status{color:#64707c;margin-left:auto;text-align:right}.warning{color:#996000!important}.leaflet-control-attribution{font-size:9px!important}.hidden{display:none!important}
+@media(max-width:420px){#layer{min-width:150px;max-width:none}.toolbar{gap:6px}}
+#legend{padding:7px 10px;border-top:1px solid #ddd;font-size:11px;line-height:1.4;max-height:130px;overflow:auto}#legend .key{display:flex;flex-wrap:wrap;gap:4px 12px}#legend .chip{display:inline-block;width:11px;height:11px;border:1px solid #888;margin-right:4px;vertical-align:middle}#legend a{color:#3c5c84}#legend p{margin:4px 0 0}
+#legend .height-scale{display:block;width:auto;max-width:100%;height:auto;max-height:65px;object-fit:contain;margin:4px auto 0}
+</style>
+</head>
+<body>
+<div class="viewer" id="viewer">
+ <div class="toolbar">
+  <select id="layer" aria-label="Satellite layer"><option value="msg_fes:cth">Cloud Top Height</option></select>
+  <span class="spacer"></span><button id="home" title="Restore the standard view">⌂ ORM</button><button id="expand" title="Fullscreen map" aria-label="Fullscreen map">⛶</button>
+ </div>
+ <div id="map" aria-label="Satellite map: drag to pan, use plus and minus or scroll to zoom"></div>
+ <div id="legend" aria-label="Layer legend"></div>
+ <div class="observation-row">
+  <output id="stamp">Loading latest observation…</output>
+  <div id="status" role="status">Connecting to EUMETSAT…</div>
+ </div>
+</div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const DEFAULT_CENTER = [28.3, -15.8];
+const DEFAULT_ZOOM = 6;
+let map, shown, pending, metadata={}, generation=0, metadataFailed=false, lastRefresh=0;
+function status(text, warning=false){$('status').textContent=text;$('status').classList.toggle('warning',warning);}
+function updateLegend(name){
+ const legends={
+  'msg_fes:ir108': '<strong>MSG 10.8 µm · original grayscale</strong> · <a href="https://view.eumetsat.int/productviewer/productDetails/msg_fes%3Air108" target="_blank" rel="noopener noreferrer">ⓘ Official EUMETSAT product info ↗</a>',
+  'mtg_fd:li_afa': '<p><strong>Lightning · 5-minute accumulation </strong><a href="https://view.eumetsat.int/productviewer/productDetails/mtg_fd%3Ali_afa" target="_blank" rel="noopener noreferrer">Product info ↗</a></p><img class="height-scale" src="https://view.eumetsat.int/geoserver/ows?service=WMS&version=1.3.0&request=GetLegendGraphic&format=image%2Fpng&width=640&height=80&layer=mtg_fd%3Ali_afa" alt="EUMETSAT accumulated flash area colour scale">',
+  'msg_fes:cth': '<img class="height-scale" src="https://view.eumetsat.int/geoserver/ows?service=WMS&version=1.3.0&request=GetLegendGraphic&format=image%2Fpng&width=640&height=80&layer=msg_fes%3Acth" alt="EUMETSAT Cloud Top Height colour scale">',
+  'mtg_fd:ir105_hrfi': '<strong>Infrared · brightness temperature (°C)</strong><img class="height-scale" src="https://view.eumetsat.int/geoserver/ows?service=WMS&version=1.3.0&request=GetLegendGraphic&format=image%2Fpng&width=640&height=80&layer=mtg_fd%3Air105_hrfi&style=mtg_fd_ir105_hrfi_style_01" alt="EUMETSAT infrared brightness-temperature colour scale">',
+  'mtg_fd:rgb_dust': '<p> <a href="https://dust.trainhub.eumetsat.int/docs/msg_rgb.html" target="_blank" rel="noopener noreferrer">Interpretation guide ↗</a></p>'
+ };
+ $('legend').innerHTML=legends[name]||'';
+ const scale=$('legend').querySelector('.height-scale');
+ if(scale)scale.onerror=()=>scale.replaceWith(document.createTextNode('Colour scale unavailable. Refresh to retry.'));
+}
+
+function show(){
+ const stamp=metadata[$('layer').value]?.latest;
+ if(!map || !stamp)return;
+ const token=++generation;
+ if(pending){map.removeLayer(pending);pending=null;}
+ status('Loading '+stamp.replace('T',' ').replace('Z',' UTC')+'…');
+ const layer=L.tileLayer.wms('https://view.eumetsat.int/geoserver/wms',{
+   layers:$('layer').value,styles:$('layer').value==='mtg_fd:ir105_hrfi'?'mtg_fd:mtg_fd_ir105_hrfi_style_01':'',format:'image/png',transparent:true,version:'1.1.1',time:stamp,
+   attribution:'© EUMETSAT',opacity:0,tileSize:512,maxZoom:12,keepBuffer:1
+ });
+ pending=layer;let failed=false;let finished=false;
+ const timeout=setTimeout(()=>finish(true),20000);
+ function finish(error){
+  if(finished)return;finished=true;clearTimeout(timeout);
+  if(token!==generation)return;
+  if(error){map.removeLayer(layer);pending=null;status('Latest image unavailable. Try refreshing. Previous image retained.',true);return;}
+  if(shown)map.removeLayer(shown);shown=layer;pending=null;layer.setOpacity(1);updateLegend($('layer').value);
+  const end=new Date(Date.parse(stamp)+300000).toISOString().slice(11,16);
+  $('stamp').textContent=$('layer').value==='mtg_fd:li_afa'?'Lightning: '+stamp.slice(0,10)+' '+stamp.slice(11,16)+'–'+end+' UTC':'Observed: '+stamp.replace('T',' ').replace('Z',' UTC')+' · latest';
+  const age=Math.max(0,Math.floor((Date.now()-Date.parse(metadata[$('layer').value].latest))/60000));
+  const stale=age>30 || metadataFailed;
+  status((metadataFailed?'Refresh unavailable · ':age>30?'Delayed feed · ':'')+`Latest observation ${age} min old`,stale);
+ }
+ layer.on('tileerror',()=>{failed=true;});layer.once('load',()=>finish(failed));layer.addTo(map);
+}
+async function refresh(){
+ try{
+  const response=await fetch('../eumetsat/metadata',{cache:'no-store'});
+  if(!response.ok)throw Error('Metadata unavailable');
+  const data=await response.json();metadataFailed=data.failed;
+  if(!Object.keys(data.layers).length)throw Error('No observations');
+  metadata=data.layers;
+  const selected=$('layer').value;
+  $('layer').replaceChildren(...data.order.filter(value=>metadata[value]).map(value=>new Option(metadata[value].label,value)));
+  if(metadata[selected])$('layer').value=selected;
+  show();
+ }catch(error){metadataFailed=true;status('EUMETSAT unavailable. Retrying automatically; any existing image is retained.',true);}
+}
+if(typeof L==='undefined'){status('Map library could not load. Check the connection and refresh.',true);}
+else{
+ map=L.map('map',{scrollWheelZoom:true,minZoom:3,maxZoom:12}).setView(DEFAULT_CENTER,DEFAULT_ZOOM);
+ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap contributors'}).addTo(map);
+ map.createPane('coastlines');map.getPane('coastlines').style.zIndex=450;map.getPane('coastlines').style.pointerEvents='none';
+ L.tileLayer.wms('https://view.eumetsat.int/geoserver/wms',{layers:'backgrounds:ne_10m_coastline',format:'image/png',transparent:true,version:'1.1.1',pane:'coastlines',attribution:'Natural Earth',maxZoom:12}).addTo(map);
+ refresh();setInterval(refresh,300000);
+}
+$('layer').onchange=show;
+$('home').onclick=()=>map?.setView(DEFAULT_CENTER,DEFAULT_ZOOM);
+$('expand').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('viewer').requestFullscreen();}catch(e){status('Fullscreen is unavailable in this browser.',true);}};
+document.addEventListener('fullscreenchange',()=>setTimeout(()=>{map?.invalidateSize();},100));
+new ResizeObserver(()=>{map?.invalidateSize();}).observe($('map'));
+window.addEventListener('message',event=>{
+ if(event.origin!==location.origin || event.source!==parent || event.data?.type!=='eumetsat-controls')return;
+ if(event.data.refresh!==lastRefresh){lastRefresh=event.data.refresh;refresh();}
+});
+</script>
+</body>
+</html>

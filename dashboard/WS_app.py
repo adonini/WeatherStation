@@ -28,6 +28,7 @@ from content import (content, dir_bins_local, dir_labels_local, spd_bins, spd_la
                      alert_messages, satellite_tab, cloud_tab, thunder_tab,
                      rain_tab)
 from navbar import navbar
+from satellite import register_satellite_callbacks
 
 
 matplotlib.use('Agg')
@@ -1167,6 +1168,9 @@ def windy_tab(n_intervals, active_tab):
         return thunder_tab
     elif active_tab == "rain":
         return rain_tab
+
+
+register_satellite_callbacks(app)
 
 
 # Run the app

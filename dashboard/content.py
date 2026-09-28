@@ -4,6 +4,7 @@ from utils_modal import info_body, windy_body
 from configurations import config, time_options
 from utils_functions import speed_labels, generate_iframe, generate_tab
 import numpy as np
+from satellite import make_satellite_card
 
 
 # Map combinations of alerts to messages
@@ -178,6 +179,7 @@ content = dbc.Row([
     #make_plot_card("Global Radiation", "rad_hour_choice", "radiation-graph", "rad-timestamp"),
     make_plot_card("Pressure", "press_hour_choice", "pressure-graph", "press-timestamp"),
     windy_card,
+    make_satellite_card(),
     #make_plot_card("Brightness", "brightness_hour_choice", "brightness-graph", "brightness-timestamp"),
     dcc.Interval(id='interval-component', interval=60000, n_intervals=0, disabled=False),  # 1min update
 ], className="justify-content-around p-2")
