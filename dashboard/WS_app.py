@@ -393,10 +393,6 @@ def update_recovery_status(_):
             (SAFETY['recovery_seconds'] + SAFETY['rain_confirm_seconds']
              + SAFETY['rain_clear_seconds'] + 2 * SAFETY['max_data_gap_seconds']) / 3600, now)
         status = recovery_status(rows, now, lambda row: compute_alert_flags(extract_live_values(row)))
-        if status['state'] == 'alert':
-            flags = {name: name in status['active']
-                     for name in ('humidity', 'wind', 'gust', 'strong_wind', 'rain')}
-            status['message'] = build_alert_message(flags)
         return status
     except Exception:
         logger.exception('Recovery status unavailable')

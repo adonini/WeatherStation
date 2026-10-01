@@ -14,6 +14,28 @@ def valid(value):
     return isinstance(value, (int, float)) and math.isfinite(value)
 
 
+def alert_message(active, readings, stale=False):
+    """Use one action for combined alerts, with severe wind taking priority."""
+    windy = 'wind' in active or 'gust' in active
+    conditions = (['HIGH WIND'] if windy else [])
+    conditions += ['HIGH HUMIDITY'] if 'humidity' in active else []
+    conditions += ['RAIN'] if 'rain' in active else []
+    severe = 'strong_wind' in active
+    heading = 'VERY STRONG WIND' if severe else ' + '.join(conditions)
+    if heading == 'RAIN':
+        heading = 'RAIN DETECTED'
+    action = ('Park the telescopes and go to the residencia' if severe else
+              'Close the camera shutter and bring the telescopes to standby' if windy else
+              'Close the camera shutter')
+    lines = ['⚠ ' + heading + ' ⚠', action]
+    if severe:
+        others = [name for flag, name in (('humidity', 'high humidity'), ('rain', 'rain')) if flag in active]
+        if others:
+            lines.append('Also active: ' + ', '.join(others) + '.')
+    if stale:
+        lines.append('Station data unavailable — alert clearance cannot be verified.')
+    return '\n'.join(lines)
+
 
 def recovery_status(rows, now, compute_flags):
     """Require ten minutes of fresh clear samples; retain 20s rain debounce.
@@ -28,6 +50,8 @@ def recovery_status(rows, now, compute_flags):
     rain_active = False
     active = []
     latest = None
+    alert_readings = {}
+    missing = False
     for row in rows:
         stamp = utc(row['timestamp'])
         if stamp > now or (previous is not None and stamp <= previous):
@@ -39,8 +63,9 @@ def recovery_status(rows, now, compute_flags):
         latest = stamp
         if not all(valid(row.get(key)) for key in REQUIRED_FIELDS):
             clear_since = None
-            active = []
+            missing = True
             continue
+        missing = False
         flags = compute_flags(row)
         if flags['rain_raw']:
             dry_since = None
@@ -57,12 +82,15 @@ def recovery_status(rows, now, compute_flags):
             active.append('rain')
         if active:
             clear_since = None
+            alert_readings = row
         elif clear_since is None:
             clear_since = stamp
-    if latest is None or now - latest > timedelta(seconds=SAFETY['max_data_gap_seconds']):
-        return {'state': 'unknown', 'message': 'Recovery cannot be verified — waiting for fresh station data.'}
+    stale = latest is None or now - latest > timedelta(seconds=SAFETY['max_data_gap_seconds'])
     if active:
-        return {'state': 'alert', 'active': active}
+        return {'state': 'alert', 'active': active,
+                'message': alert_message(active, alert_readings, stale or missing)}
+    if stale:
+        return {'state': 'unknown', 'message': 'Recovery cannot be verified, waiting for fresh station data'}
     if clear_since is None:
         return {'state': 'unknown', 'message': 'Recovery cannot be verified, safety values are missing'}
     deadline = clear_since + timedelta(seconds=SAFETY['recovery_seconds'])

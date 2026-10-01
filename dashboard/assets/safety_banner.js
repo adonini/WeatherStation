@@ -6,7 +6,14 @@ window.dash_clientside.weatherSafety = {
                    textAlign:'center', padding:'10px', height:'auto', whiteSpace:'pre-line'};
     const waitingStyle = {...style, backgroundColor:'rgb(228, 130, 75)', color:'var(--bs-white)'};
     if (!status) return [false, 'Checking station safety status…', waitingStyle];
-    if (status.state === 'alert') return [false, status.message, {...style, backgroundColor:'red'}];
+    if (status.state === 'alert') {
+        window.wsLastRedMessage = status.message;
+        return [false, status.message, {...style, backgroundColor:'red'}];
+    }
+    if (status.state === 'unknown' && window.wsLastRedMessage) {
+        return [false, window.wsLastRedMessage+'\nStation data unavailable — alert clearance cannot be verified.', {...style, backgroundColor:'red'}];
+    }
+    window.wsLastRedMessage = null;
     if (status.state === 'clear') return [true, '', style];
     let text = status.message;
     if (status.state === 'recovery') {
