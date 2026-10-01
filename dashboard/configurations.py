@@ -1,3 +1,11 @@
+# Waiting-period timing, in seconds. Restart the dashboard after changes.
+SAFETY = {
+    'rain_confirm_seconds': 20,  # Required wet duration before confirming rain.
+    'rain_clear_seconds': 20,    # Required dry duration before clearing rain.
+    'recovery_seconds': 600,     # 10 minutes below all alert limits before waiting ends.
+    'max_data_gap_seconds': 120, # Older readings or longer gaps cannot confirm recovery.
+}
+
 # Set location for Roque de los Muchachos
 location_lst = [28.7666636, -17.8833298, 2200]  # lat, long, elevation
 

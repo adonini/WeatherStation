@@ -31,6 +31,8 @@ from satellite import register_satellite_callbacks
 from windy import register_windy_callbacks
 from history_cache import HistoryCache
 from graph_rendering import history_trace
+from configurations import SAFETY
+from recovery import recovery_status
 
 
 matplotlib.use('Agg')
@@ -62,6 +64,10 @@ try:
     client = MongoClient("mongodb://" + db_host + ":" + db_port)
     mydb = client[db_name]
     collection = mydb[db_coll]
+    recovery_history = HistoryCache(collection, 'timestamp',
+        ['Relative_Humidity', 'Mean_10_Wind_Speed', 'Max_Wind',
+         'Precipitation_Intensity', 'Precipitation_Type', 'Precipitation_Status'],
+        ttl_seconds=5, full_refresh_seconds=60)
     graph_history = HistoryCache(
         collection, 'timestamp', [
             'Absolute_Air_Pressure',
@@ -216,6 +222,9 @@ def update_audio_state(alert_states, flags, time_now):
 app.layout = html.Div([
     dcc.Store(id='alert-store', data=alert_states_default),  # Store to keep alert states, initialized with the default one
     dcc.Store(id='audio-triggers', data=[]),
+    dcc.Store(id='recovery-status'),
+    dcc.Interval(id='recovery-poll', interval=5000, n_intervals=0),
+    dcc.Interval(id='recovery-clock', interval=1000, n_intervals=0),
     dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
     html.Audio(id='audio-element', controls=False, autoPlay=True, style={'display': 'none'}),
     navbar,
@@ -330,8 +339,6 @@ def update_sun(n_intervals):
 # update the live values every 20 seconds
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
-               Output('red-alert', 'hidden'),
-               Output('red-alert', 'children'),
                Output('alert-store', 'data'),
                Output('audio-triggers', 'data'),
                Output('rain-store', 'data')],
@@ -346,7 +353,7 @@ def update_live_values(n_intervals, alert_states_store, rain_timer):
     latest_data = collection.find_one(sort=[('timestamp', pymongo.DESCENDING)])
 
     if not latest_data:
-        return [], dbc.Badge("No data", color="secondary"), True, "", alert_states, [], rain_alert_timer
+        return [], dbc.Badge("No data", color="secondary"), alert_states, [], rain_alert_timer
 
     timestamps = latest_data['timestamp']
     cloud_value, tran9_value = get_magic_values()
@@ -355,9 +362,6 @@ def update_live_values(n_intervals, alert_states_store, rain_timer):
     values = extract_live_values(latest_data)
     flags = compute_alert_flags(values)
     values, flags, rain_alert_timer = apply_rain_logic(values, flags, rain_alert_timer, time_now)
-
-    is_alert = any_alert_active(flags)
-    message = build_alert_message(flags)
 
     live_values = build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value)
 
@@ -374,12 +378,33 @@ def update_live_values(n_intervals, alert_states_store, rain_timer):
 
     return [live_values,
             badge,
-            not is_alert,
-            message,
             alert_states,
             audio_triggers,
             rain_alert_timer
             ]
+
+
+# independent of modal pauses and browser-local rain state.
+@app.callback(Output('recovery-status', 'data'), Input('recovery-poll', 'n_intervals'))
+def update_recovery_status(_):
+    now = datetime.now(timezone.utc)
+    try:
+        rows = recovery_history.read(
+            (SAFETY['recovery_seconds'] + SAFETY['rain_confirm_seconds']
+             + SAFETY['rain_clear_seconds'] + 2 * SAFETY['max_data_gap_seconds']) / 3600, now)
+        status = recovery_status(rows, now, lambda row: compute_alert_flags(extract_live_values(row)))
+        if status['state'] == 'alert':
+            flags = {name: name in status['active']
+                     for name in ('humidity', 'wind', 'gust', 'strong_wind', 'rain')}
+            status['message'] = build_alert_message(flags)
+        return status
+    except Exception:
+        logger.exception('Recovery status unavailable')
+        return {'state': 'unknown', 'message': 'Recovery cannot be verified — station data unavailable.'}
+
+
+app.clientside_callback(dash.ClientsideFunction(namespace='weatherSafety', function_name='renderWaitingPeriod'), [Output('red-alert', 'hidden'), Output('red-alert', 'children'), Output('red-alert', 'style')],
+    [Input('recovery-status', 'data'), Input('recovery-clock', 'n_intervals')])
 
 
 # callback to play alert audio
