@@ -1,13 +1,24 @@
-# Waiting-period timing, in seconds. Restart the dashboard after changes.
-SAFETY = {
-    'rain_confirm_seconds': 20,  # Required wet duration before confirming rain.
-    'rain_clear_seconds': 20,    # Required dry duration before clearing rain.
-    'recovery_seconds': 600,     # 10 minutes below all alert limits before waiting ends.
-    'max_data_gap_seconds': 120, # Older readings or longer gaps cannot confirm recovery.
-}
-
 # Set location for Roque de los Muchachos
 location_lst = [28.7666636, -17.8833298, 2200]  # lat, long, elevation
+
+# Safety configuration: thresholds are inclusive (>=), except rain intensity (>).
+# Restart the dashboard after changing these values.
+SAFETY = {
+    'humidity_percent': 90,          # at or above this triggers a red alert.
+    'humidity_warning_percent': 80,  # same but just warning area
+    'wind_kmh': 36,                  # 10-minute mean wind at or above this triggers a red alert.
+    'wind_warning_kmh': 30,
+    'gust_kmh': 60,                  # Wind gust speed at or above this triggers a red alert.
+    'gust_warning_kmh': 50,
+    'strong_wind_kmh': 50,           # triggers severe-wind safety message.
+    'strong_gust_kmh': 85,           # triggers the severe-wind message
+    'rain_intensity_mm_h': 0,        # must be above 0 to count as one rain signal
+    'rain_required_signals': 2,      # Required rain signals out of 3: intensity above limit, nonzero status, nonzero type.
+    'rain_confirm_seconds': 20,     # rain condition must last this many seconds before the rain alert activates
+    'rain_clear_seconds': 20,       # rain condition must disappear for this many seconds before the rain alert clears
+    'recovery_seconds': 600,        # 10 min (600s) recovery time after all alerts cleared; a new alert resets it
+    'max_data_gap_seconds': 120,    # Older readings are stale; a larger gap between readings breaks continuous recovery.
+}
 
 
 # Dictionary to store the state of each alert and the timestamp when the alert was first triggered

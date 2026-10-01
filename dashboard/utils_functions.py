@@ -1,3 +1,4 @@
+from configurations import SAFETY
 import dash_bootstrap_components as dbc
 from dash import html
 import numpy as np
@@ -249,7 +250,7 @@ def handle_rain_alert(precip_alert, rain_alert_timer, time_now):
             # Timer is running; check elapsed time
             timestamp_datetime = datetime.strptime(rain_alert_timer['start_time'], '%Y-%m-%dT%H:%M:%S.%f%z')
             elapsed_time = (time_now - timestamp_datetime).total_seconds()
-            if elapsed_time >= 20:
+            if elapsed_time >= SAFETY['rain_confirm_seconds']:
                 # 20s elapsed → Confirm rain alert as active
                 rain_alert_timer['rain_active'] = True
                 precip_alert = True  # Rain officially considered active
@@ -257,7 +258,7 @@ def handle_rain_alert(precip_alert, rain_alert_timer, time_now):
             else:
                 # Still in countdown period → suppress alert
                 precip_alert = False
-                logger.info(f'Rain alert countdown: {20 - elapsed_time:.2f}s remaining.')
+                logger.info("Rain alert countdown: %.2fs remaining.", SAFETY["rain_confirm_seconds"] - elapsed_time)
     else:
         # No rain detected → Reset everything
         rain_alert_timer['active'] = False
@@ -305,17 +306,17 @@ def compute_alert_flags(values):
     p_int = values["p_int"]
 
     return {
-        "humidity": hum is not None and hum >= 90,
-        "wind": w10_speed is not None and w10_speed >= 36,
-        "gust": g_speed is not None and g_speed >= 60,
-        "rain_raw": p_int is not None and p_int > 0,
+        "humidity": hum is not None and hum >= SAFETY['humidity_percent'],
+        "wind": w10_speed is not None and w10_speed >= SAFETY['wind_kmh'],
+        "gust": g_speed is not None and g_speed >= SAFETY['gust_kmh'],
+        "rain_raw": p_int is not None and p_int > SAFETY['rain_intensity_mm_h'],
         "strong_wind": (
-            (g_speed is not None and g_speed >= 85) or
-            (w10_speed is not None and w10_speed >= 50)
+            (g_speed is not None and g_speed >= SAFETY['strong_gust_kmh']) or
+            (w10_speed is not None and w10_speed >= SAFETY['strong_wind_kmh'])
         ),
-        "humidity_warning": hum is not None and 80 <= hum < 90,
-        "wind_warning": w10_speed is not None and 30 <= w10_speed < 36,
-        "gust_warning": g_speed is not None and 50 <= g_speed < 60,
+        "humidity_warning": hum is not None and SAFETY['humidity_warning_percent'] <= hum < SAFETY['humidity_percent'],
+        "wind_warning": w10_speed is not None and SAFETY['wind_warning_kmh'] <= w10_speed < SAFETY['wind_kmh'],
+        "gust_warning": g_speed is not None and SAFETY['gust_warning_kmh'] <= g_speed < SAFETY['gust_kmh'],
     }
 
 

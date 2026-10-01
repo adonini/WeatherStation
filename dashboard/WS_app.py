@@ -365,14 +365,14 @@ def update_live_values(n_intervals, alert_states_store, rain_timer):
 
     live_values = build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value)
 
-    if timestamps.replace(tzinfo=timezone.utc) > (time_now - timedelta(minutes=2)):
+    if timestamps.replace(tzinfo=timezone.utc) > (time_now - timedelta(seconds=SAFETY['max_data_gap_seconds'])):
         live_values = apply_live_value_alert_styles(live_values, values, flags)
 
     alert_states, audio_triggers = update_audio_state(alert_states, flags, time_now)
 
     badge = dbc.Badge(
         f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}",
-        color='secondary' if timestamps.replace(tzinfo=timezone.utc) < (time_now - timedelta(minutes=2)) else 'green',
+        color='secondary' if timestamps.replace(tzinfo=timezone.utc) < (time_now - timedelta(seconds=SAFETY['max_data_gap_seconds'])) else 'green',
         className="text-wrap fw-light"
     )
 
@@ -553,7 +553,7 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
                              )
                   )
 
-    yaxis_tickvals = [0, 20, 40, 60, 80, 90, 100]
+    yaxis_tickvals = sorted(set([0, 20, 40, 60, 100, SAFETY['humidity_warning_percent'], SAFETY['humidity_percent']]))
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 100],
                       uirevision=True,  # stay zoomed in with an update
@@ -574,9 +574,9 @@ def update_hum_graph(n_intervals, time_range, refresh_clicks):
     # Change graph color if above limit if timestamps are up to date
     latest_ts = timestamps[0].replace(tzinfo=timezone.utc)
     if latest_ts and latest_ts > (utc_now - timedelta(minutes=5)):
-        if latest_data >= 90:
+        if latest_data >= SAFETY['humidity_percent']:
             fig.update_traces(fill='tonexty', line_color='red')
-        if 80 <= latest_data < 90:
+        if SAFETY['humidity_warning_percent'] <= latest_data < SAFETY['humidity_percent']:
             fig.update_traces(fill='tonexty', line_color='orange')
 
     # Check if the refresh button was clicked
@@ -627,7 +627,7 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
 
     # Gust trace
     g_name = 'Wind Gusts'
-    if latest_gdata >= 60:
+    if latest_gdata >= SAFETY['gust_kmh']:
         g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
     fig.add_trace(history_trace(x=new_timestamps, y=new_g_speed,
                              name=g_name,
@@ -638,14 +638,14 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              )
                   )
     # Change gust graph color if above limit
-    if latest_gdata >= 60:
+    if latest_gdata >= SAFETY['gust_kmh']:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(254,0,206,0.1)', line_color='#fe00ce', opacity=0.1, selector=({'name': g_name}))
         # fill='tonexty' = fill to trace0 y
         # fill='tozeroy' = fill down to xaxis
 
     # Wind 10' trace
     w10_name = "Wind 10' Avg"
-    if latest_w10data >= 36:
+    if latest_w10data >= SAFETY['wind_kmh']:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
     fig.add_trace(history_trace(x=new_timestamps, y=new_w10_speed,
                              name=w10_name,
@@ -656,10 +656,10 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
                              )
                   )
     # Change wind 10' graph color if above limit
-    if latest_w10data >= 36:
+    if latest_w10data >= SAFETY['wind_kmh']:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
 
-    yaxis_tickvals = [0, 20, 36, 40, 60, 80, 100, 120, 140]
+    yaxis_tickvals = sorted(set([0, 20, 40, 80, 100, 120, 140, SAFETY['wind_kmh'], SAFETY['gust_kmh']]))
     yaxis_ticktext = [str(val) for val in yaxis_tickvals]
     fig.update_layout(yaxis_range=[0, 140],
                       uirevision=True,
