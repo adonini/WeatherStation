@@ -1,3 +1,4 @@
+from configurations import SAFETY
 import matplotlib
 import pandas as pd
 import flask
@@ -20,19 +21,17 @@ from logging.handlers import TimedRotatingFileHandler
 from dash import dcc, html, Input, Output, State
 from utils_functions import (convert_meteorological_deg2cardinal_dir, get_magic_values,
                              get_tng_dust_value, toggle_modal, handle_data_gaps,
-                             extract_live_values, compute_alert_flags, apply_rain_logic)
+                             extract_live_values, compute_alert_flags)
 from configurations import (location_lst, spd_colors_speed, alert_states_default,
-                            rain_alert_timer, min_alert_interval)
+                            min_alert_interval)
 from sidebar import sidebar, create_list_group_item, create_list_group_item_alert
-from content import (content, dir_bins_local, dir_labels_local, spd_bins, spd_labels,
-                     alert_messages)
+from content import (content, dir_bins_local, dir_labels_local, spd_bins, spd_labels)
 from navbar import navbar
 from satellite import register_satellite_callbacks
 from windy import register_windy_callbacks
 from history_cache import HistoryCache
 from graph_rendering import history_trace
-from configurations import SAFETY
-from recovery import recovery_status
+from recovery import recovery_status, apply_confirmed_rain
 
 
 matplotlib.use('Agg')
@@ -66,7 +65,10 @@ try:
     collection = mydb[db_coll]
     recovery_history = HistoryCache(collection, 'timestamp',
         ['Relative_Humidity', 'Mean_10_Wind_Speed', 'Max_Wind',
-         'Precipitation_Intensity', 'Precipitation_Type', 'Precipitation_Status'],
+         'Precipitation_Intensity', 'Precipitation_Type', 'Precipitation_Status',
+         'Air_Temperature', 'Absolute_Air_Pressure', 'Average_Wind_Speed',
+         'Brightness', 'Brightness_lux', 'Dew_Point_Temperature',
+         'Mean_Wind_Direction', 'Precipitation_Amount', 'Global_Radiation'],
         ttl_seconds=5, full_refresh_seconds=60)
     graph_history = HistoryCache(
         collection, 'timestamp', [
@@ -97,24 +99,6 @@ app = dash.Dash(server=server, update_title=None, suppress_callback_exceptions=T
 ##########################
 # Helper functions
 ##########################
-def build_alert_message(flags):
-    wind_combined = flags["wind"] or flags["gust"]
-
-    if flags["strong_wind"]:
-        return alert_messages.get((True, False, False, True), '')
-
-    key = (flags["humidity"], wind_combined, flags["rain"])
-    return alert_messages.get(key, "Combination not found in alert messages")
-
-
-def any_alert_active(flags):
-    return any([
-        flags["humidity"],
-        flags["wind"],
-        flags["gust"],
-        flags["rain"],
-        flags["strong_wind"],
-    ])
 
 
 def build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value):
@@ -223,9 +207,9 @@ app.layout = html.Div([
     dcc.Store(id='alert-store', data=alert_states_default),  # Store to keep alert states, initialized with the default one
     dcc.Store(id='audio-triggers', data=[]),
     dcc.Store(id='recovery-status'),
+    dcc.Store(id='external-live-values', data={}),
     dcc.Interval(id='recovery-poll', interval=5000, n_intervals=0),
     dcc.Interval(id='recovery-clock', interval=1000, n_intervals=0),
-    dcc.Store(id='rain-store', data=rain_alert_timer),  # store to keep rain alerts, initialized with the default one
     html.Audio(id='audio-element', controls=False, autoPlay=True, style={'display': 'none'}),
     navbar,
     html.Hr(className="mt-0"),
@@ -336,32 +320,40 @@ def update_sun(n_intervals):
         return ('n/a',) * 4
 
 
-# update the live values every 20 seconds
+@app.callback(Output('external-live-values', 'data'),
+              Input('interval-livevalues', 'n_intervals'))
+def update_external_live_values(_):
+    # External HTTP requests must not delay station alerts or run every five seconds.
+    cloud, transmission = get_magic_values()
+    return dict(cloud=cloud, transmission=transmission, dust=get_tng_dust_value())
+
+
+# Update live values and the banner together from one station-history snapshot.
 @app.callback([Output('live-values', 'children'),
                Output('live-timestamp', 'children'),
                Output('alert-store', 'data'),
                Output('audio-triggers', 'data'),
-               Output('rain-store', 'data')],
-              [Input('interval-livevalues', 'n_intervals')],
-              [State('alert-store', 'data'),
-               State('rain-store', 'data')])
-def update_live_values(n_intervals, alert_states_store, rain_timer):
+               Output('recovery-status', 'data')],
+              [Input('recovery-poll', 'n_intervals')],
+              [State('alert-store', 'data'), State('external-live-values', 'data')])
+def update_live_values(n_intervals, alert_states_store, external_values):
     alert_states = alert_states_store
-    rain_alert_timer = rain_timer
 
     time_now = datetime.now(timezone.utc)
-    latest_data = collection.find_one(sort=[('timestamp', pymongo.DESCENDING)])
+    status, latest_data = read_safety_snapshot(time_now)
 
     if not latest_data:
-        return [], dbc.Badge("No data", color="secondary"), alert_states, [], rain_alert_timer
+        return [], dbc.Badge("No data", color="secondary"), alert_states, [], status
 
     timestamps = latest_data['timestamp']
-    cloud_value, tran9_value = get_magic_values()
-    tng_dust_value = get_tng_dust_value()
+    external_values = external_values or {}
+    cloud_value = external_values.get('cloud')
+    tran9_value = external_values.get('transmission')
+    tng_dust_value = external_values.get('dust')
 
     values = extract_live_values(latest_data)
     flags = compute_alert_flags(values)
-    values, flags, rain_alert_timer = apply_rain_logic(values, flags, rain_alert_timer, time_now)
+    values, flags = apply_confirmed_rain(values, flags, status)
 
     live_values = build_live_values(values, timestamps, cloud_value, tran9_value, tng_dust_value)
 
@@ -370,33 +362,31 @@ def update_live_values(n_intervals, alert_states_store, rain_timer):
 
     alert_states, audio_triggers = update_audio_state(alert_states, flags, time_now)
 
-    badge = dbc.Badge(
-        f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}",
-        color='secondary' if timestamps.replace(tzinfo=timezone.utc) < (time_now - timedelta(seconds=SAFETY['max_data_gap_seconds'])) else 'green',
-        className="text-wrap fw-light"
-    )
+    badge = dbc.Badge(f"Last update: {timestamps.strftime('%Y-%m-%d %H:%M:%S')}",
+                      color='secondary' if timestamps.replace(tzinfo=timezone.utc) < (time_now - timedelta(seconds=SAFETY['max_data_gap_seconds'])) else 'green',
+                      className="text-wrap fw-light")
 
     return [live_values,
             badge,
             alert_states,
             audio_triggers,
-            rain_alert_timer
+            status
             ]
 
 
-# independent of modal pauses and browser-local rain state.
-@app.callback(Output('recovery-status', 'data'), Input('recovery-poll', 'n_intervals'))
-def update_recovery_status(_):
-    now = datetime.now(timezone.utc)
+# Independent of modal pauses and browser-local rain state.
+def read_safety_snapshot(now):
     try:
         rows = recovery_history.read(
             (SAFETY['recovery_seconds'] + SAFETY['rain_confirm_seconds']
              + SAFETY['rain_clear_seconds'] + 2 * SAFETY['max_data_gap_seconds']) / 3600, now)
         status = recovery_status(rows, now, lambda row: compute_alert_flags(extract_live_values(row)))
-        return status
+        eligible = [row for row in rows if row['timestamp'].replace(tzinfo=timezone.utc) <= now]
+        latest = max(eligible, key=lambda row: row['timestamp']) if eligible else None
+        return status, latest
     except Exception:
         logger.exception('Recovery status unavailable')
-        return {'state': 'unknown', 'message': 'Recovery cannot be verified — station data unavailable.'}
+        return {'state': 'unknown', 'message': 'Recovery cannot be verified — station data unavailable.'}, None
 
 
 app.clientside_callback(dash.ClientsideFunction(namespace='weatherSafety', function_name='renderWaitingPeriod'), [Output('red-alert', 'hidden'), Output('red-alert', 'children'), Output('red-alert', 'style')],
@@ -445,20 +435,16 @@ def update_temp_graph(n_intervals, time_range, refresh_clicks):
 
     fig = go.Figure()
     fig.add_trace(history_trace(x=new_timestamps, y=new_temps,
-                             name='Temperature',
-                             line_color="#316395",
-                             hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
-                             connectgaps=False))
+                                name='Temperature',
+                                line_color="#316395",
+                                hovertemplate=('%{x}<br>' + 'Temperature: %{y:.2f} °C <br><extra></extra> '),
+                                connectgaps=False))
 
     # Add dew-point temp to the plot
-    fig.add_trace(history_trace(x=new_timestamps, y=new_dews,
-                             name='Dew Point',
-                             line_color='firebrick',
-                             line_dash='dot',
-                             hovertemplate=('%{x}<br>' + 'Dew Point: %{y:.2f} °C <br><extra></extra> '),
-                             connectgaps=False,
-                             )
-                  )
+    fig.add_trace(history_trace(x=new_timestamps, y=new_dews, name='Dew Point', line_color='firebrick',
+                                line_dash='dot',
+                                hovertemplate=('%{x}<br>' + 'Dew Point: %{y:.2f} °C <br><extra></extra> '),
+                                connectgaps=False))
 
     fig.add_trace(history_trace(
         x=new_timestamps,
@@ -618,25 +604,19 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
 
     # Wind 1' trace
     w_name = "Wind 1' Avg"
-    fig.add_trace(history_trace(x=new_timestamps, y=new_w_speed,
-                             name=w_name,
-                             hoveron='points',
-                             line_color="#316395",
-                             hovertemplate=("%{x}<br>" + "Wind 1' Avg: %{y:.2f} km/h <br><extra></extra> "),
-                             connectgaps=False))
+    fig.add_trace(history_trace(x=new_timestamps, y=new_w_speed, name=w_name, hoveron='points',
+                                line_color="#316395",
+                                hovertemplate=("%{x}<br>" + "Wind 1' Avg: %{y:.2f} km/h <br><extra></extra> "),
+                                connectgaps=False))
 
     # Gust trace
     g_name = 'Wind Gusts'
     if latest_gdata >= SAFETY['gust_kmh']:
         g_name = '<span style="color:red">&#x26a0; Wind Gusts</span>'
-    fig.add_trace(history_trace(x=new_timestamps, y=new_g_speed,
-                             name=g_name,
-                             hoveron='points',
-                             line_color='#86ce00',
-                             hovertemplate=('%{x}<br>' + 'Wind Gusts: %{y:.2f} km/h <br><extra></extra> '),
-                             connectgaps=False,
-                             )
-                  )
+    fig.add_trace(history_trace(x=new_timestamps, y=new_g_speed, name=g_name, hoveron='points',
+                                line_color='#86ce00',
+                                hovertemplate=('%{x}<br>' + 'Wind Gusts: %{y:.2f} km/h <br><extra></extra> '),
+                                connectgaps=False))
     # Change gust graph color if above limit
     if latest_gdata >= SAFETY['gust_kmh']:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(254,0,206,0.1)', line_color='#fe00ce', opacity=0.1, selector=({'name': g_name}))
@@ -647,14 +627,10 @@ def update_wind_graph(n_intervals, time_range, refresh_clicks):
     w10_name = "Wind 10' Avg"
     if latest_w10data >= SAFETY['wind_kmh']:
         w10_name = '<span style="color:red">&#x26a0; Wind 10\' Avg </span>'
-    fig.add_trace(history_trace(x=new_timestamps, y=new_w10_speed,
-                             name=w10_name,
-                             hoveron='points',
-                             line_color="rgb(219,112,147)",
-                             hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> "),
-                             connectgaps=False,
-                             )
-                  )
+    fig.add_trace(history_trace(x=new_timestamps, y=new_w10_speed, name=w10_name, hoveron='points',
+                                line_color="rgb(219,112,147)",
+                                hovertemplate=("%{x}<br>" + "Wind 10' Avg: %{y:.2f} km/h <br><extra></extra> "),
+                                connectgaps=False))
     # Change wind 10' graph color if above limit
     if latest_w10data >= SAFETY['wind_kmh']:
         fig.update_traces(fill='tozeroy', fillcolor='rgba(255,0,0,0.1)', line_color='red', opacity=0.1, selector=({'name': w10_name}))
@@ -825,69 +801,6 @@ def update_wind_rose(n_intervals, time_range, refresh_clicks):
     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green', className="fw-light")
 
 
-# Define the callback function to update the radiation graph
-# @app.callback([Output('radiation-graph', 'figure'),
-#                Output('rad-timestamp', 'children')],
-#               [Input('interval-component', 'n_intervals'),
-#                Input('rad_hour_choice', 'value'),
-#                Input('Global Radiation-refresh-button', 'n_clicks')])
-# def update_radiation_graph(n_intervals, time_range, refresh_clicks):
-#     projection = {
-#         'timestamp': 1,
-#         'Global_Radiation': 1,
-#         '_id': 0
-#     }
-#     utc_now = datetime.now(timezone.utc)
-#     # Query the data from the database
-#     data = list(collection.find({'timestamp': {'$gte': utc_now - timedelta(hours=time_range)}},
-#                                 projection, sort=[('timestamp', pymongo.DESCENDING)]))
-#     if not data:
-#         # Query the latest data from the database and avoid having None values
-#         last = collection.find_one({},
-#                                    projection,
-#                                    sort=[('timestamp', pymongo.DESCENDING)]
-#                                    )
-#         if last:
-#             # Retrieve all the data starting from the latest data
-#             data = list(collection.find({'timestamp': {'$gte': last['timestamp'] - timedelta(hours=time_range)}},
-#                                         projection, sort=[('timestamp', pymongo.DESCENDING)]))
-#     # Get the global radiation values
-#     rad = [d.get('Global_Radiation') for d in data]
-#     timestamps = [doc['timestamp'] for doc in data]
-
-#     # correct for data missing for >2min so that no line in connecting the dots in that case
-#     new_timestamps, new_rad = handle_data_gaps(timestamps, rad)
-
-#     # Create the figure
-#     dict = {
-#         'data': [{'x': new_timestamps, 'y': new_rad}],
-#         'layout': {
-#             #'title': f'Global radiation in the Last {time_range} Hours',
-#             'xaxis': {'tickangle': 45},
-#             'yaxis': {'title': 'Global radiation [W/m^2]'},
-#             #'width': 620,
-#             #'height': 400,
-#             'autosize': True,
-#             #"xaxis.autorange": True,
-#             'margin': {'t': 20, 'r': 20},
-#             'template': 'plotly_white',
-#         }
-#     }
-#     fig = go.Figure(dict)
-#     fig.update_layout(yaxis_range=[0, 1300],
-#                       uirevision=True,
-#                       modebar_orientation="v",
-#                       )
-#     fig.update_traces(line_color="#316395", hovertemplate=('%{x}<br>' + 'Global Radiation: %{y:.2f} W/m^2<br><extra></extra> '), connectgaps=False)
-#     fig.update_xaxes(showgrid=False, type='date')
-
-#     # Check if the refresh button was clicked
-#     ctx = dash.callback_context
-#     button_id = 'Global Radiation-refresh-button'
-#     if button_id in ctx.triggered[0]['prop_id']:
-#         # Reset the zoom by setting 'uirevision' to a unique value
-#         fig.update_layout(uirevision=str(uuid.uuid4()))
-#     return fig, dbc.Badge(f"Last update: {timestamps[0]}", color='secondary' if timestamps[0].replace(tzinfo=timezone.utc) < (utc_now - timedelta(minutes=5)) else 'green', className="fw-light")
 @app.callback(
     [Output('pressure-graph', 'figure'),
      Output('press-timestamp', 'children')],

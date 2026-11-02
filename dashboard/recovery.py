@@ -14,6 +14,15 @@ def valid(value):
     return isinstance(value, (int, float)) and math.isfinite(value)
 
 
+def apply_confirmed_rain(values, flags, status):
+    """Use the banner's history-based rain confirmation for live values/audio."""
+    flags['rain'] = 'rain' in status.get('active', [])
+    rain_label = values['p_type_label'] if values.get('p_type_raw') else None
+    values['p_type_display'] = (rain_label or 'Rain detected') if flags['rain'] else 'No Rain'
+    values['p_int_display'] = values['p_int'] if flags['rain'] else 0
+    return values, flags
+
+
 def alert_message(active, stale=False):
     """Use one action for combined alerts, with severe wind taking priority."""
     windy = 'wind' in active or 'gust' in active
