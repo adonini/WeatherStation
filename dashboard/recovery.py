@@ -14,7 +14,7 @@ def valid(value):
     return isinstance(value, (int, float)) and math.isfinite(value)
 
 
-def alert_message(active, readings, stale=False):
+def alert_message(active, stale=False):
     """Use one action for combined alerts, with severe wind taking priority."""
     windy = 'wind' in active or 'gust' in active
     conditions = (['HIGH WIND'] if windy else [])
@@ -25,8 +25,7 @@ def alert_message(active, readings, stale=False):
     if heading == 'RAIN':
         heading = 'RAIN DETECTED'
     action = ('Park the telescopes and go to the residencia' if severe else
-              'Close the camera shutter and bring the telescopes to standby' if windy else
-              'Close the camera shutter')
+              'Close the camera shutter and bring the telescopes to park-out position')
     lines = ['⚠ ' + heading + ' ⚠', action]
     if severe:
         others = [name for flag, name in (('humidity', 'high humidity'), ('rain', 'rain')) if flag in active]
@@ -50,7 +49,6 @@ def recovery_status(rows, now, compute_flags):
     rain_active = False
     active = []
     latest = None
-    alert_readings = {}
     missing = False
     for row in rows:
         stamp = utc(row['timestamp'])
@@ -82,13 +80,12 @@ def recovery_status(rows, now, compute_flags):
             active.append('rain')
         if active:
             clear_since = None
-            alert_readings = row
         elif clear_since is None:
             clear_since = stamp
     stale = latest is None or now - latest > timedelta(seconds=SAFETY['max_data_gap_seconds'])
     if active:
         return {'state': 'alert', 'active': active,
-                'message': alert_message(active, alert_readings, stale or missing)}
+                'message': alert_message(active, stale=stale or missing)}
     if stale:
         return {'state': 'unknown', 'message': 'Recovery cannot be verified, waiting for fresh station data'}
     if clear_since is None:
